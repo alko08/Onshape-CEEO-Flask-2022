@@ -138,3 +138,7 @@ cert.pem
 
 # Pycharm
 .idea
+
+# static images
+static/images
+image.jpg

@@ -649,8 +649,8 @@ def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.0
         images.append(gen_frame("image.jpg"))
         print(str(int(i/frames * 1000)/10) + "%", end="\r")
     print("")
-    im1.save('static/OnshapeGIF1.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
-    return '/static/OnshapeGIF1.gif'
+    im1.save('static/images/OnshapeGIF1.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
+    return 'static/images/OnshapeGIF1.gif'
 
 
 def linear_interpolation(client, url: str):
@@ -677,5 +677,5 @@ def linear_interpolation(client, url: str):
         assemblies_shaded_view(client, url, flattened, 0.001, "hide", "image.jpg")
         images.append(gen_frame("image.jpg"))
 
-    im1.save('static/OnshapeGIF2.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
-    return '/static/OnshapeGIF2.gif'
+    im1.save('static/images/OnshapeGIF2.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
+    return 'static/images/OnshapeGIF2.gif'
