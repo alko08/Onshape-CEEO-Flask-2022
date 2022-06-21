@@ -1,0 +1,108 @@
+<!doctype html>
+
+<head>
+    <title>CEEO Flask App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+    <header><h1> Tufts CEEO App </h1></header>
+    <hr>
+
+    <button onclick="hidePartsList()" class="hover">Parts List</button>
+    <div id="partsList">
+        <p>
+            <b> All parts in document: </b><br>
+            {% for part in return1 %}
+                <br>{{part}}
+            {% endfor %}
+        </p>
+    </div>
+    <hr>
+
+    <form action="/gif">
+        <h3 style="text-align:left; color:#000000;"> GIF Maker </h3>
+
+        <label for="frames">Frames:</label>
+        <input type="number" id="frames" name="frames" value={{FRAMES}} style="width:50px"><br><br>
+
+        <label for="rotation">Total Rotation (in degrees):</label>
+        <input type="number" id="rotation" name="rotation" value={{ROTATION}} style="width:60px" step="0.01"><br><br>
+
+        <label for="zoom_start">Starting Zoom:</label>
+        <input type="number" id="zoom_start" name="zoom_start" value={{ZSTART}} style="width:70px" step="0.00001"><br><br>
+
+        <label for="zoom_end">Ending Zoom:</label>
+        <input type="number" id="zoom_end" name="zoom_end" value={{ZEND}} style="width:70px" step="0.00001"><br><br>
+
+        <label for="start_view">Choose The Starting View Angle:</label>
+        <select name="start_view" id="start_view">
+            {%for part in range(0, return2_len)%}
+                <option value="{{return2[part]}}" {% if selected1==return2[part] %} selected="selected" {% endif %}>{{return2[part]}}</option>
+            {% endfor %}
+        </select><br><br>
+
+
+
+        <div id="submit"><input type="submit" value="Submit" class="hover button" onclick="showLoader()"></div>
+        <div class="loader-container" id="loader"><div class="loader"></div></div>
+
+        {% if condition1 %}
+            <img src="{{ image1 }}" alt="GIF of the assembly"/>
+        {% endif %}
+
+    </form>
+    <hr>
+
+    <button onclick="hideIdList()" class="hover">Document ID's</button>
+    <div id="idList">
+        <p id="did">DocumentId: {{DID}}</p>
+        <p id="wid">WorkspaceId: {{WID}}</p>
+        <p id="eid">ElementId: {{EID}}</p>
+    </div>
+
+    <form action="/home">
+        <br>
+        <input type="submit" value="Reset" class="hover button">
+    </form>
+    <br>
+</body>
+
+<script>
+function hidePartsList() {
+  var x = document.getElementById("partsList");
+  if (x.style.display === "block") {
+    x.style.display = "none";
+  } else {
+    x.style.display = "block";
+  }
+}
+
+function hideIdList() {
+  var x = document.getElementById("idList");
+  if (x.style.display === "block") {
+    x.style.display = "none";
+  } else {
+    x.style.display = "block";
+  }
+}
+
+function showLoader() {
+  var x = document.getElementById("submit");
+  var y = document.getElementById("loader");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+    y.style.display = "none";
+  } else {
+    x.style.display = "none";
+    y.style.display = "block";
+  }
+}
+
+Document.addEventListener('invalid' => {
+    var x = document.getElementById("submit");
+    if (x.style.display === "none") {
+        showLoader();
+    }
+})
+</script>

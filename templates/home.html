@@ -1,0 +1,110 @@
+<!doctype html>
+
+<head>
+    <title>CEEO Flask App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+    <header><h1> Tufts CEEO App </h1></header>
+    <hr>
+
+    <button onclick="hidePartsList()" class="hover">Parts List</button>
+    <div id="partsList">
+        <p>
+            <b> All parts in document: </b><br>
+            {% for part in return1 %}
+                <br>{{part}}
+            {% endfor %}
+        </p>
+    </div>
+    <hr>
+
+    <form action="/graph">
+        <h3 style="text-align:left; color:#000000;"> Rotate Part and Graph Tracked Positions </h3>
+        <label for="step">Rotation step (in degree):</label>
+        <input type="number" id="step" name="step" value={{STEP}} style="width:60px" step="0.01"><br><br>
+
+        <label for="rotate_part">Choose Part To Rotate In XY Plane Around Origin:</label>
+        <select name="rotate_part" id="rotate_part">
+            {%for part in range(0, return2_len)%}
+            <option value="{{return2[part]}}" {% if selected1==return2[part] %} selected="selected" {% endif %}>{{return2[part]}}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label for="input_track">Choose Part To Track Input:</label>
+        <select name="input_track" id="input_track">
+            {%for part in range(0, return2_len)%}
+            <option value="{{return2[part]}}" {% if selected2==return2[part] %} selected="selected" {% endif %}>{{return2[part]}}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label for="output_track">Choose Part To Track Output:</label>
+        <select name="output_track" id="output_track">
+            {%for part in range(0, return2_len)%}
+            <option value="{{return2[part]}}" {% if selected3==return2[part] %} selected="selected" {% endif %}>{{return2[part]}}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <div id="submit"><input type="submit" value="Submit" class="hover button" onclick="showLoader()"></div>
+        <div class="loader-container" id="loader"><div class="loader"></div></div>
+
+        {% if condition1 %}
+            <img src="data:image/jpeg;base64,{{ image1 }}" alt="Graph of the data"/>
+        {% endif %}
+
+    </form>
+    <hr>
+
+    <button onclick="hideIdList()" class="hover">Document ID's</button>
+    <div id="idList">
+        <p id="did">DocumentId: {{DID}}</p>
+        <p id="wid">WorkspaceId: {{WID}}</p>
+        <p id="eid">ElementId: {{EID}}</p>
+    </div>
+
+    <form action="/home">
+        <br>
+        <input type="submit" value="Reset" class="hover button">
+    </form>
+    <br>
+</body>
+
+<script>
+function hidePartsList() {
+  var x = document.getElementById("partsList");
+  if (x.style.display === "block") {
+    x.style.display = "none";
+  } else {
+    x.style.display = "block";
+  }
+}
+
+function hideIdList() {
+  var x = document.getElementById("idList");
+  if (x.style.display === "block") {
+    x.style.display = "none";
+  } else {
+    x.style.display = "block";
+  }
+}
+
+function showLoader() {
+  var x = document.getElementById("submit");
+  var y = document.getElementById("loader");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+    y.style.display = "none";
+  } else {
+    x.style.display = "none";
+    y.style.display = "block";
+  }
+}
+
+Document.addEventListener('invalid' => {
+    var x = document.getElementById("submit");
+    if (x.style.display === "none") {
+        showLoader();
+    }
+})
+</script>

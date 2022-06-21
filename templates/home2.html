@@ -1,0 +1,99 @@
+<!doctype html>
+
+<head>
+    <title>CEEO Flask App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+
+<body>
+    <header><h1> Tufts CEEO App </h1></header>
+    <hr>
+
+
+    <button onclick="hidePartsList()" class="hover">Parts List</button>
+    <div id="partsList">
+        <p>
+            <b> All parts in document: </b><br>
+            {% for para in return1 %}
+                <br>{{para}}
+            {% endfor %}
+        </p>
+    </div>
+    <hr>
+
+
+    <form action="/home2">
+        <h3> {{ condition1 }} - View </h3>
+        <img src="data:image/jpeg;base64,{{ img_data }}" alt="img_data"  id="imgslot"/>
+        <br>
+
+        <label for="view_matrix">Change View Angle:</label>
+        <select name="view_matrix" id="view_matrix">
+            <option value="Front">Front</option>
+            <option value="Back">Back</option>
+            <option value="Top">Top</option>
+            <option value="Bottom">Bottom</option>
+            <option value="Left">Left</option>
+            <option value="Right">Right</option>
+            <option value="Isometric">Isometric</option>
+            <option value="Flipped Isometric">Flipped Isometric</option>
+        </select>
+
+        <div id="submit"><input type="submit" name="refresh" value="Refresh" class="hover button" onclick="showLoader()"></div>
+        <div class="loader-container" id="loader"><div class="loader"></div></div>
+    </form>
+    <hr>
+
+    <button onclick="hideidList()" class="hover">Document ID's</button>
+    <div id="idList">
+        <p id="did">DocumentId: {{DID}}</p>
+        <p id="wid">WorkspaceId: {{WID}}</p>
+        <p id="eid">ElementId: {{EID}}</p>
+    </div>
+
+    <form action="/home2">
+        <br>
+        <input type="submit" value="Reset" class="hover button">
+    </form>
+    <br>
+
+</body>
+
+<script>
+function hidePartsList() {
+  var x = document.getElementById("partsList");
+  if (x.style.display === "block") {
+    x.style.display = "none";
+  } else {
+    x.style.display = "block";
+  }
+}
+
+function hideidList() {
+  var x = document.getElementById("idList");
+  if (x.style.display === "block") {
+    x.style.display = "none";
+  } else {
+    x.style.display = "block";
+  }
+}
+
+function showLoader() {
+  var x = document.getElementById("submit");
+  var y = document.getElementById("loader");
+  if (x.style.display === "none") {
+    x.style.display = "block";
+    y.style.display = "none";
+  } else {
+    x.style.display = "none";
+    y.style.display = "block";
+  }
+}
+
+Document.addEventListener('invalid' => {
+    var x = document.getElementById("submit");
+    if (x.style.display === "none") {
+        showLoader();
+    }
+})
+</script>
