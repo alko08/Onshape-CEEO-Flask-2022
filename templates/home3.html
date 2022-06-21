@@ -70,7 +70,7 @@
 
 <script>
 function hidePartsList() {
-  var x = document.getElementById("partsList");
+  const x = document.getElementById("partsList");
   if (x.style.display === "block") {
     x.style.display = "none";
   } else {
@@ -79,7 +79,7 @@ function hidePartsList() {
 }
 
 function hideIdList() {
-  var x = document.getElementById("idList");
+  const x = document.getElementById("idList");
   if (x.style.display === "block") {
     x.style.display = "none";
   } else {
@@ -88,9 +88,16 @@ function hideIdList() {
 }
 
 function showLoader() {
-  var x = document.getElementById("submit");
-  var y = document.getElementById("loader");
-  if (x.style.display === "none") {
+  let x = document.getElementById("submit");
+  let y = document.getElementById("loader");
+  const id1 = document.getElementById("frames");
+  const id2 = document.getElementById("rotation");
+  const id3 = document.getElementById("zoom_start");
+  const id4 = document.getElementById("zoom_end");
+
+
+  if (x.style.display === "none" || !id1.checkValidity() || !id2.checkValidity()
+  || !id3.checkValidity() || !id4.checkValidity()) {
     x.style.display = "block";
     y.style.display = "none";
   } else {
@@ -98,11 +105,4 @@ function showLoader() {
     y.style.display = "block";
   }
 }
-
-Document.addEventListener('invalid' => {
-    var x = document.getElementById("submit");
-    if (x.style.display === "none") {
-        showLoader();
-    }
-})
 </script>
