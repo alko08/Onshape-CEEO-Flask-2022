@@ -188,9 +188,10 @@ def login3():
 
     frames = 60
     rotation = 45
-    zoom_start = 0.001
-    zoom_end = 0.0005
+    zoom_start = 0.001*10000
+    zoom_end = 0.0005*10000
     start_view = "Isometric"
+    z_auto = False
 
     if did or wid or eid:
         DID = did
@@ -202,8 +203,8 @@ def login3():
     views = get_views(client, url)
     return render_template('home3.html', DID=DID, WID=WID, EID=EID, condition1=False,
                            return1=list_parts_assembly(client, url).split('\n'), FRAMES=frames, ROTATION=rotation,
-                           ZSTART=zoom_start, ZEND=zoom_end, return2=list(views.keys()), return2_len=len(views.keys()),
-                           selected1=start_view)
+                           ZSTART=int(zoom_start), ZEND=int(zoom_end), ZAUTO=z_auto, return2=list(views.keys()),
+                           return2_len=len(views.keys()), selected1=start_view)
 
 
 # Graph page for part assembly extension
@@ -216,8 +217,9 @@ def gif():
     eid = request.args.get('elementId')
     frames = int(request.args.get('frames'))
     rotation = float(request.args.get('rotation'))
-    zoom_start = float(request.args.get('zoom_start'))
-    zoom_end = float(request.args.get('zoom_end'))
+    z_auto = bool(request.args.get('zoom_auto'))
+    zoom_start = float(request.args.get('zoom_start'))/10000
+    zoom_end = float(request.args.get('zoom_end'))/10000
     start_view = request.args.get('start_view')
 
     if did or wid or eid:
@@ -229,10 +231,13 @@ def gif():
     url = '{}/documents/{}/w/{}/e/{}'.format(str(base), str(DID), str(WID), str(EID))
 
     views = get_views(client, url)
+    print(z_auto)
     return render_template('home3.html', condition1=True, DID=DID, WID=WID, EID=EID, FRAMES=frames, ROTATION=rotation,
-                           image1=stepping_rotation(client, url, frames, rotation, zoom_start, zoom_end, start_view),
-                           return1=list_parts_assembly(client, url).split('\n'), ZSTART=zoom_start, ZEND=zoom_end,
-                           return2=list(views.keys()), return2_len=len(views.keys()), selected1=start_view)
+                           image1=stepping_rotation(client, url, frames, rotation, zoom_start, zoom_end, start_view,
+                                                    z_auto),
+                           return1=list_parts_assembly(client, url).split('\n'), ZSTART=int(zoom_start*10000),
+                           ZEND=int(zoom_end*10000), return2=list(views.keys()), return2_len=len(views.keys()),
+                           selected1=start_view, ZAUTO=z_auto)
 
 
 # -------------------------------------------------------------------------------------------#
@@ -615,7 +620,7 @@ def get_views(client, url: str):
 # ------View Matrix Functions----------#
 # -------------------------------------#
 def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.001, zoom_end=0.0005,
-                      start_view="Isometric"):
+                      start_view="Isometric", z_auto=False):
     global viewsDictionary
 
     if rotation == 0:
@@ -634,7 +639,10 @@ def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.0
     matrix = new_array
 
     translation = np.linspace(translation_start, translation_end, frames)
-    zoom_array = np.linspace(zoom_start, zoom_end, frames)
+    if not z_auto:
+        zoom_array = np.linspace(zoom_start, zoom_end, frames)
+    else:
+        zoom_array = np.linspace(0, 0, frames)
 
     matrix = multiply(matrix, clockwise_spinz(total_z_rotation_angle / frames))
     matrix = move_matrix(matrix, translation[0][0], translation[0][1], translation[0][2])

@@ -29,11 +29,20 @@
         <label for="rotation">Total Rotation (in degrees):</label>
         <input type="number" id="rotation" name="rotation" value={{ROTATION}} style="width:60px" step="0.01"><br><br>
 
-        <label for="zoom_start">Starting Zoom:</label>
-        <input type="number" id="zoom_start" name="zoom_start" value={{ZSTART}} style="width:70px" step="0.00001"><br><br>
+        <label for="zoom_auto" class="switch">
+            <span>No Zoom (Automatically Zooms):<input type="checkbox" id="zoom_auto" name="zoom_auto" onclick="showZooms()"
+                                                       class="checkbox" {% if ZAUTO %} checked {% endif %}></span>
+        </label><br><br>
 
-        <label for="zoom_end">Ending Zoom:</label>
-        <input type="number" id="zoom_end" name="zoom_end" value={{ZEND}} style="width:70px" step="0.00001"><br><br>
+        <div id="zooms" {% if ZAUTO %} style="display:none;" {% endif %}>
+            <label for="zoom_start">Starting Zoom:</label><br>
+            <input type="range" min="1" max="1000" id="zoom_start_slider" name="zoom_start" value={{ZSTART}} class="slider"><br>
+            <input type="number" id="zoom_start" value={{ZSTART}} style="width:50px" class="move"><br><br>
+
+            <label for="zoom_end">Ending Zoom:</label><br>
+            <input type="range" min="1" max="1000" id="zoom_end_slider" name="zoom_end" value={{ZEND}} class="slider"><br>
+            <input type="number" id="zoom_end" value={{ZEND}} style="width:50px" class="move"><br><br>
+        </div>
 
         <label for="start_view">Choose The Starting View Angle:</label>
         <select name="start_view" id="start_view">
@@ -103,6 +112,44 @@ function showLoader() {
   } else {
     x.style.display = "none";
     y.style.display = "block";
+  }
+}
+
+var slider = document.getElementById("zoom_start_slider");
+var input = document.getElementById("zoom_start");
+var slider2 = document.getElementById("zoom_end_slider");
+var input2 = document.getElementById("zoom_end");
+
+var inputValue = parseInt(input.value);
+var inputValue2 = parseInt(input2.value);
+slider.value = inputValue; // Display the default value
+slider2.value = inputValue2; // Display the default value
+
+// Update the current slider value (each time you drag the slider handle)
+slider.oninput = function() {
+  input.value = this.value;
+}
+slider2.oninput = function() {
+  input2.value = this.value;
+}
+input.oninput = function() {
+  slider.value = this.value;
+}
+input2.oninput = function() {
+  slider2.value = this.value;
+}
+
+function showZooms() {
+  let x = document.getElementById("zooms");
+
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+    input.value = inputValue;
+    slider.value = inputValue;
+    input2.value = inputValue2;
+    slider2.value = inputValue2;
   }
 }
 </script>
