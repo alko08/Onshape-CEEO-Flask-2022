@@ -14,7 +14,6 @@ from onshape_client.client import Client
 from onshape_client.onshape_url import OnshapeElement
 
 from PIL import Image
-import math
 
 # -------------------------------------------------------------------------------------------#
 # ------------------ Defining Variables -----------------------------------------------------#
@@ -186,12 +185,17 @@ def login3():
     wid = request.args.get('workspaceId')
     eid = request.args.get('elementId')
 
-    frames = 60
-    rotation = 45
-    zoom_start = 0.001*10000
-    zoom_end = 0.0005*10000
+    frames = 20
+    rotation = 0
+    zoom_start = (.1001-0.001) * 10000
+    zoom_mid = (.1001 - 0.002) * 10000
+    zoom_end = (.1001-0.0005) * 10000
     start_view = "Isometric"
-    z_auto = False
+    z_auto = True
+    loop = True
+    zoom3 = False
+    no_rotate = True
+    direction = 4   # 1=X, 2=Y, 3=XY, 4=Z, 5=XZ, 6=YZ, 7=XYZ
 
     if did or wid or eid:
         DID = did
@@ -204,7 +208,8 @@ def login3():
     return render_template('home3.html', DID=DID, WID=WID, EID=EID, condition1=False,
                            return1=list_parts_assembly(client, url).split('\n'), FRAMES=frames, ROTATION=rotation,
                            ZSTART=int(zoom_start), ZEND=int(zoom_end), ZAUTO=z_auto, return2=list(views.keys()),
-                           return2_len=len(views.keys()), selected1=start_view)
+                           return2_len=len(views.keys()), selected1=start_view, LOOP=loop, ZOOM3=zoom3,
+                           ZMID=int(zoom_mid), DIRECTION=int(direction), ROTATE=no_rotate)
 
 
 # Graph page for part assembly extension
@@ -218,9 +223,16 @@ def gif():
     frames = int(request.args.get('frames'))
     rotation = float(request.args.get('rotation'))
     z_auto = bool(request.args.get('zoom_auto'))
-    zoom_start = float(request.args.get('zoom_start'))/10000
-    zoom_end = float(request.args.get('zoom_end'))/10000
+    zoom_start = .1001 - float(request.args.get('zoom_start')) / 10000
+    zoom_end = .1001 - float(request.args.get('zoom_end')) / 10000
+    zoom_mid = .1001 - float(request.args.get('zoom_mid')) / 10000
     start_view = request.args.get('start_view')
+    loop = bool(request.args.get('loop'))
+    zoom3 = bool(request.args.get('do_zoom_mid'))
+    direction = 0 + bool(request.args.get('rotateX'))
+    direction = direction + 2 * bool(request.args.get('rotateY'))
+    direction = direction + 4 * bool(request.args.get('rotateZ'))
+    print(direction)
 
     if did or wid or eid:
         DID = did
@@ -231,13 +243,13 @@ def gif():
     url = '{}/documents/{}/w/{}/e/{}'.format(str(base), str(DID), str(WID), str(EID))
 
     views = get_views(client, url)
-    print(z_auto)
     return render_template('home3.html', condition1=True, DID=DID, WID=WID, EID=EID, FRAMES=frames, ROTATION=rotation,
                            image1=stepping_rotation(client, url, frames, rotation, zoom_start, zoom_end, start_view,
-                                                    z_auto),
-                           return1=list_parts_assembly(client, url).split('\n'), ZSTART=int(zoom_start*10000),
-                           ZEND=int(zoom_end*10000), return2=list(views.keys()), return2_len=len(views.keys()),
-                           selected1=start_view, ZAUTO=z_auto)
+                                                    z_auto, loop, zoom3, zoom_mid, direction),
+                           return1=list_parts_assembly(client, url).split('\n'), ZSTART=int((.1001-zoom_start)*10000),
+                           ZEND=int((.1001-zoom_end)*10000), return2=list(views.keys()), return2_len=len(views.keys()),
+                           selected1=start_view, ZAUTO=z_auto, LOOP=loop, ZOOM3=zoom3,
+                           ZMID=int((.1001-zoom_mid)*10000), DIRECTION=int(direction))
 
 
 # -------------------------------------------------------------------------------------------#
@@ -259,7 +271,7 @@ def rotate_input(client, assembly, url: str, part_id: str, rotation: float):
         print("Part not found!")
         return None
     
-    rot_mat = np.matmul(identity_matrix, clockwise_spin_z(rotation))
+    rot_mat = np.matmul(identity_matrix, clockwise_spinz(rotation))
     transform_mat = np.matmul(identity_matrix, rot_mat)
 
     fixed_url = '/api/assemblies/d/did/w/wid/e/eid/occurrencetransforms'
@@ -299,14 +311,6 @@ def get_assembly_definition(client, url: str):
                                          body=payload)
     parsed = json.loads(response.data)
     return parsed
-
-
-def clockwise_spin_z(theta):
-    m = [[np.cos(theta), np.sin(theta), 0, 0],
-         [-np.sin(theta), np.cos(theta), 0, 0],
-         [0, 0, 1, 0],
-         [0, 0, 0, 1]]
-    return m
 
 
 def get_position(assembly, part_id: str):
@@ -489,6 +493,16 @@ def identity_twelve():
     return m
 
 
+# identity_twelve() returns a flattened identity view matrix (1x12)
+def identity_fourxthree():
+    m = [[1, 0, 0, 0],
+         [0, 1, 0, 0],
+         [0, 0, 1, 0],
+         [0, 0, 0, 1]
+         ]
+    return m
+
+
 # move_matrix(base,x1,y1,z1) takes a 1x12 view matrix and moves the x,y,z coordinates
 def move_matrix(matrix_base, x1, y1, z1):
     matrix = matrix_base
@@ -508,7 +522,7 @@ def move_flat(matrix_base, x1, y1, z1):
 
 
 # twelve_threexfour(matrix) takes a flattened 1x12 view matrix and makes a 4x3 matrix for linear algebra
-def twelve_threexfour(matrix):
+def twelve_fourxthree(matrix):
     threexfour = [[matrix[0], matrix[1], matrix[2], matrix[3]],
                   [matrix[4], matrix[5], matrix[6], matrix[7]],
                   [matrix[8], matrix[9], matrix[10], matrix[11]]]
@@ -516,23 +530,36 @@ def twelve_threexfour(matrix):
 
 
 # threexfour_twelve(matrix) takes a 4x3 view matrix and flattens it to 1x12, the form used by Onshape
-def threexfour_twelve(matrix):
+def fourxthree_twelve(matrix):
     twelve = [matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],
               matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],
               matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3]]
     return twelve
 
 
-def fourxfour_threexfour(matrix):
+def fourxfour_fourxthree(matrix):
     matrix.pop(3)
     return matrix
+
+
+# clockwise_spin(theta) returns a 4x3 matrix with a rotation of theta around the specified direction.
+# 1=X, 2=Y, 3=XY, 4=Z, 5=XZ, 6=YZ, 7=XYZ
+def clockwise_spin(theta, direction):
+    m = identity_fourxthree()
+    if direction >= 4:
+        m = clockwise_spinx(theta)
+    if direction >= 2:
+        m = multiply(m, clockwise_spiny(theta))
+    if direction >= 1:
+        m = multiply(m, clockwise_spinz(theta))
+    return m
 
 
 # clockwise_spinx(theta) returns a 4x3 matrix with a rotation of theta around the x axis.
 def clockwise_spinx(theta):
     m = [[1, 0, 0, 0],
-         [0, math.cos(theta), math.sin(theta), 0],
-         [0, -math.sin(theta), math.cos(theta), 0],
+         [0, np.cos(theta), np.sin(theta), 0],
+         [0, -np.sin(theta), np.cos(theta), 0],
          [0, 0, 0, 1]
          ]
     return m
@@ -540,9 +567,9 @@ def clockwise_spinx(theta):
 
 # clockwise_spiny(theta) returns a 4x3 matrix with a rotation of theta around the y axis.
 def clockwise_spiny(theta):
-    m = [[math.cos(theta), 0, math.sin(theta), 0],
+    m = [[np.cos(theta), 0, np.sin(theta), 0],
          [0, 1, 0, 0],
-         [-math.sin(theta), 0, math.cos(theta), 0],
+         [-np.sin(theta), 0, np.cos(theta), 0],
          [0, 0, 0, 1]
          ]
     return m
@@ -550,8 +577,8 @@ def clockwise_spiny(theta):
 
 # clockwise_spinz(theta) returns a 4x3 matrix with a rotation of theta around the z axis.
 def clockwise_spinz(theta):
-    m = [[math.cos(theta), math.sin(theta), 0, 0],
-         [-math.sin(theta), math.cos(theta), 0, 0],
+    m = [[np.cos(theta), np.sin(theta), 0, 0],
+         [-np.sin(theta), np.cos(theta), 0, 0],
          [0, 0, 1, 0],
          [0, 0, 0, 1]]
     return m
@@ -591,8 +618,9 @@ def get_views(client, url: str):
     view_matrices = assemblies_named_views(client, url)['namedViews']
 
     viewsDictionary.clear()
-    for a in view_matrices:
-        viewsDictionary[a] = view_matrices[a]['viewMatrix']
+    if view_matrices:
+        for a in view_matrices:
+            viewsDictionary[a] = view_matrices[a]['viewMatrix']
     viewsDictionary["Front"] = [1.0, 0.0, -0.0, 0.0, 0.0, 2.220446049250313e-16, 1.0, 0.0, 0.0, -1.0,
                                 2.220446049250313e-16, 0.0, 0.1749407045420097, -0.3300952081909283,
                                 0.015000000000000013, 1.0]
@@ -620,13 +648,13 @@ def get_views(client, url: str):
 # ------View Matrix Functions----------#
 # -------------------------------------#
 def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.001, zoom_end=0.0005,
-                      start_view="Isometric", z_auto=False):
+                      start_view="Isometric", z_auto=False, loop=True, zoom3=False, zoom_mid=0.002, direction=2):
     global viewsDictionary
 
     if rotation == 0:
         total_z_rotation_angle = 0
     else:
-        total_z_rotation_angle = math.pi / (180 / rotation)
+        total_z_rotation_angle = np.pi / (180 / rotation)
     translation_start = [0, 0, 0]
     translation_end = [0, 0, -0.05]
 
@@ -637,53 +665,67 @@ def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.0
 
     images = []
     matrix = new_array
+    zoom_array2 = []
 
     translation = np.linspace(translation_start, translation_end, frames)
+
     if not z_auto:
-        zoom_array = np.linspace(zoom_start, zoom_end, frames)
+        if zoom3:
+            zoom_array = np.linspace(zoom_start, zoom_mid, int(frames/2+.5))
+            zoom_array2 = np.linspace(zoom_mid, zoom_end, int(frames/2))
+        else:
+            zoom_array = np.linspace(zoom_start, zoom_end, frames)
     else:
         zoom_array = np.linspace(0, 0, frames)
 
-    matrix = multiply(matrix, clockwise_spinz(total_z_rotation_angle / frames))
+    matrix = multiply(matrix, clockwise_spin(total_z_rotation_angle / frames, direction))
     matrix = move_matrix(matrix, translation[0][0], translation[0][1], translation[0][2])
     flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
     assemblies_shaded_view(client, url, flattened, zoom_array[0], "hide", "image.jpg")
     im1 = gen_frame("image.jpg")
     for i in range(1, frames):
-        matrix = multiply(matrix, clockwise_spinz(total_z_rotation_angle / frames))
+        matrix = multiply(matrix, clockwise_spin(total_z_rotation_angle / frames, direction))
         matrix = move_matrix(matrix, translation[i][0], translation[i][1], translation[i][2])
         flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
-        assemblies_shaded_view(client, url, flattened, zoom_array[i], "hide", "image.jpg")
+        if zoom3 and i >= len(zoom_array):
+            # print(str(i) + " | " + str(len(zoom_array2)))
+            assemblies_shaded_view(client, url, flattened, zoom_array2[i - len(zoom_array)], "hide", "image.jpg")
+        else:
+            # print(str(i) + " | " + str(len(zoom_array)))
+            assemblies_shaded_view(client, url, flattened, zoom_array[i], "hide", "image.jpg")
         images.append(gen_frame("image.jpg"))
         print(str(int(i/frames * 1000)/10) + "%", end="\r")
     print("")
-    im1.save('static/images/OnshapeGIF1.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
+    if loop:
+        im1.save('static/images/OnshapeGIF1.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
+    else:
+        im1.save('static/images/OnshapeGIF1.gif', save_all=True, append_images=images, disposal=2, duration=0)
     return 'static/images/OnshapeGIF1.gif'
 
 
-def linear_interpolation(client, url: str):
-    start = 'view 1'
-    end = 'view 4'
-
-    view_matrices = assemblies_named_views(client, url)
-    view1 = view_matrices['namedViews'][start]['viewMatrix']
-    view2 = view_matrices['namedViews'][end]['viewMatrix']
-
-    # Build new array from old array
-    new1 = [view1[0:4], view1[4:8], view1[8:12]]
-    new2 = [view2[0:4], view2[4:8], view2[8:12]]
-
-    array = np.linspace(new1, new2, 25)
-
-    images = []
-    matrix = array[0]
-    flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
-    assemblies_shaded_view(client, url, flattened, 0.001, "hide", "image.jpg")
-    im1 = gen_frame("image.jpg")
-    for matrix in array[1:]:
-        flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
-        assemblies_shaded_view(client, url, flattened, 0.001, "hide", "image.jpg")
-        images.append(gen_frame("image.jpg"))
-
-    im1.save('static/images/OnshapeGIF2.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
-    return 'static/images/OnshapeGIF2.gif'
+# def linear_interpolation(client, url: str):
+#     start = 'view 1'
+#     end = 'view 4'
+#
+#     view_matrices = assemblies_named_views(client, url)
+#     view1 = view_matrices['namedViews'][start]['viewMatrix']
+#     view2 = view_matrices['namedViews'][end]['viewMatrix']
+#
+#     # Build new array from old array
+#     new1 = [view1[0:4], view1[4:8], view1[8:12]]
+#     new2 = [view2[0:4], view2[4:8], view2[8:12]]
+#
+#     array = np.linspace(new1, new2, 25)
+#
+#     images = []
+#     matrix = array[0]
+#     flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
+#     assemblies_shaded_view(client, url, flattened, 0.001, "hide", "image.jpg")
+#     im1 = gen_frame("image.jpg")
+#     for matrix in array[1:]:
+#         flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
+#         assemblies_shaded_view(client, url, flattened, 0.001, "hide", "image.jpg")
+#         images.append(gen_frame("image.jpg"))
+#
+#     im1.save('static/images/OnshapeGIF2.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
+#     return 'static/images/OnshapeGIF2.gif'

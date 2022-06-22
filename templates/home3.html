@@ -24,25 +24,62 @@
         <h3 style="text-align:left; color:#000000;"> GIF Maker </h3>
 
         <label for="frames">Frames:</label>
-        <input type="number" id="frames" name="frames" value={{FRAMES}} style="width:50px"><br><br>
+        <input type="number" id="frames" name="frames" value={{FRAMES}} style="width:50px"><br>
 
-        <label for="rotation">Total Rotation (in degrees):</label>
-        <input type="number" id="rotation" name="rotation" value={{ROTATION}} style="width:60px" step="0.01"><br><br>
 
-        <label for="zoom_auto" class="switch">
-            <span>No Zoom (Automatically Zooms):<input type="checkbox" id="zoom_auto" name="zoom_auto" onclick="showZooms()"
-                                                       class="checkbox" {% if ZAUTO %} checked {% endif %}></span>
-        </label><br><br>
+        <p>------------------------------------------</p>
+        <label for="rotate" class="switch">No Rotation:</label>
+        <input type="checkbox" id="rotate" name="rotate" onclick="showRotate()" class="checkbox"
+               {% if ROTATE %} checked {% endif %}><br>
+
+        <div id="rotations" {% if ROTATE %} style="display:none;" {% endif %}>
+            <br><span>Rotation Direction:</span>
+            <input type="checkbox" id="rotateX" name="rotateX"
+                   {% if DIRECTION == 1 or DIRECTION == 3 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
+            <label for="rotateX">X</label>
+            <input type="checkbox" id="rotateY" name="rotateY"
+                   {% if DIRECTION == 2 or DIRECTION == 3 or DIRECTION == 5 or DIRECTION == 7 %} checked {% endif %}>
+            <label for="rotateY">Y</label>
+            <input type="checkbox" id="rotateZ" name="rotateZ"
+                   {% if DIRECTION == 4 or DIRECTION == 5 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
+            <label for="rotateZ">Z</label><br><br>
+
+            <label for="rotation">Total Rotation (in degrees):</label>
+            <input type="number" id="rotation" name="rotation" value={{ROTATION}} style="width:60px" step="0.01"><br>
+        </div>
+
+
+        <p>------------------------------------------</p>
+        <label for="zoom_auto" class="switch">No Zoom (Automatically Zooms):</label>
+        <input type="checkbox" id="zoom_auto" name="zoom_auto" onclick="showZooms()" class="checkbox"
+                   {% if ZAUTO %} checked {% endif %}><br>
 
         <div id="zooms" {% if ZAUTO %} style="display:none;" {% endif %}>
-            <label for="zoom_start">Starting Zoom:</label><br>
-            <input type="range" min="1" max="1000" id="zoom_start_slider" name="zoom_start" value={{ZSTART}} class="slider"><br>
-            <input type="number" id="zoom_start" value={{ZSTART}} style="width:50px" class="move"><br><br>
+            <br><label for="zoom_start">Starting Zoom:</label><br>
+            <span class="circle_small">●</span>
+            <input type="range" min="1" max="1000" id="zoom_start_slider" name="zoom_start" value={{ZSTART}} class="slider">
+            <span class="circle_big">●</span><br>
+            <input type="number" id="zoom_start" value={{ZSTART}} style="width:60px" class="slider_text"><br><br>
+
+            <label for="do_zoom_mid" class="switch">Middle Zoom Point:</label>
+            <input type="checkbox" id="do_zoom_mid" name="do_zoom_mid" onclick="showZoomMid()" class="checkbox"
+                   {% if ZOOM3 %} checked {% endif %}><br><br>
+            <div id="mid_zoom" {% if not ZOOM3 %} style="display:none;" {% endif %}>
+                <label for="zoom_mid">Middle Zoom:</label><br>
+                <span class="circle_small">●</span>
+                <input type="range" min="1" max="1000" id="zoom_mid_slider" name="zoom_mid" value={{ZMID}} class="slider">
+                <span class="circle_big">●</span><br>
+                <input type="number" id="zoom_mid" value={{ZMID}} style="width:60px" class="slider_text"><br><br>
+            </div>
 
             <label for="zoom_end">Ending Zoom:</label><br>
-            <input type="range" min="1" max="1000" id="zoom_end_slider" name="zoom_end" value={{ZEND}} class="slider"><br>
-            <input type="number" id="zoom_end" value={{ZEND}} style="width:50px" class="move"><br><br>
+            <span class="circle_small">●</span>
+            <input type="range" min="1" max="1000" id="zoom_end_slider" name="zoom_end" value={{ZEND}} class="slider">
+            <span class="circle_big">●</span><br>
+            <input type="number" id="zoom_end" value={{ZEND}} style="width:60px" class="slider_text"><br>
         </div>
+        <p>------------------------------------------</p>
+
 
         <label for="start_view">Choose The Starting View Angle:</label>
         <select name="start_view" id="start_view">
@@ -51,7 +88,8 @@
             {% endfor %}
         </select><br><br>
 
-
+        <label for="loop" class="switch">Loop GIF:</label>
+        <input type="checkbox" id="loop" name="loop"  class="checkbox" {% if LOOP %} checked {% endif %}><br><br>
 
         <div id="submit"><input type="submit" value="Submit" class="hover button" onclick="showLoader()"></div>
         <div class="loader-container" id="loader"><div class="loader"></div></div>
@@ -119,11 +157,15 @@ var slider = document.getElementById("zoom_start_slider");
 var input = document.getElementById("zoom_start");
 var slider2 = document.getElementById("zoom_end_slider");
 var input2 = document.getElementById("zoom_end");
+var slider3 = document.getElementById("zoom_mid_slider");
+var input3 = document.getElementById("zoom_mid");
 
 var inputValue = parseInt(input.value);
 var inputValue2 = parseInt(input2.value);
+var inputValue3 = parseInt(input3.value);
 slider.value = inputValue; // Display the default value
-slider2.value = inputValue2; // Display the default value
+slider2.value = inputValue2;
+slider3.value = inputValue3;
 
 // Update the current slider value (each time you drag the slider handle)
 slider.oninput = function() {
@@ -138,6 +180,12 @@ input.oninput = function() {
 input2.oninput = function() {
   slider2.value = this.value;
 }
+slider3.oninput = function() {
+  input3.value = this.value;
+}
+input3.oninput = function() {
+  slider3.value = this.value;
+}
 
 function showZooms() {
   let x = document.getElementById("zooms");
@@ -150,6 +198,32 @@ function showZooms() {
     slider.value = inputValue;
     input2.value = inputValue2;
     slider2.value = inputValue2;
+  }
+}
+
+function showZoomMid() {
+  let x = document.getElementById("mid_zoom");
+
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+    input3.value = inputValue3;
+    slider3.value = inputValue3;
+  }
+}
+
+var rotate = document.getElementById("rotation");
+var rotateValue = parseInt(rotate.value);
+
+function showRotate() {
+  let x = document.getElementById("rotations");
+
+  if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+    rotate.value = rotateValue;
   }
 }
 </script>
