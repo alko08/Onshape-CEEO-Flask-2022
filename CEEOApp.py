@@ -1,18 +1,21 @@
+# Imports needed for multiple extensions and file structure as a whole
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
-import io 
 import json
-import numpy as np 
+import numpy as np
 import os
-
 import base64
 
+# Imports for Onshape API Calls
+from onshape_client.client import Client
+from onshape_client.onshape_url import OnshapeElement
+
+# Imports for the CEEO Rotate and Graph Extension
+import io
 import matplotlib.pyplot as plt 
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
-from onshape_client.client import Client
-from onshape_client.onshape_url import OnshapeElement
-
+# Imports for the CEEO GIF Maker Extension
 from PIL import Image
 
 # -------------------------------------------------------------------------------------------#
@@ -34,9 +37,10 @@ selected1 = "Input <1>"
 selected2 = "Position Tracker <1>"
 selected3 = "Position Tracker <2>"
 
-base = 'https://rogers.onshape.com'  # change if using an Enterprise account
+base = 'https://rogers.onshape.com'  # Change if using an Enterprise account
+# base = 'https://cad.onshape.com'  # This is the default Enterprise
 
-# Search and check if a file named "OnshapeAPIKey.py" exists in the folder 
+# Search and check if a file named "OnshapeAPIKey.py" exists in the folder. Then uses the API Keys found in the file
 for _, _, files in os.walk('.'): 
     if "OnshapeAPIKey.py" in files: 
         exec(open('OnshapeAPIKey.py').read())
@@ -53,16 +57,18 @@ def index():
     return redirect(url_for("home"))
 
 
+# This allows and the user to access all files in static, like images!
 @app.route("/static/<path:path>")
 def static_dir(path):
     return send_from_directory("static", path)
 
 
-# Home page for part assembly extension
+# Home page for part assembly, CEEO Rotate extension
 @app.route('/home')
 def login():
     global EID, WID, DID, STEP, partsDictionary, selected1, selected2, selected3
 
+    # Defines default values
     STEP = 60
     selected1 = "Input <1>"
     selected2 = "Position Tracker <1>"
@@ -77,15 +83,19 @@ def login():
         WID = wid
         EID = eid
 
+    # Generate Onshape URL and client for API calls
     client = Client(configuration={"base_url": base, "access_key": app_key, "secret_key": secret_key})
     url = '{}/documents/{}/w/{}/e/{}'.format(base, str(DID), str(WID), str(EID))
-    return render_template('home.html', DID=DID, WID=WID, EID=EID, STEP=STEP,  condition1=False,
+
+    # Returns html webpage and make api calls using template 'home.html'
+    return render_template('home.html', DID=DID, WID=WID, EID=EID, STEP=STEP, condition1=False,
                            return1=list_parts_assembly(client, url).split('\n'), return2=list(partsDictionary.keys()),
                            return2_len=len(partsDictionary.keys()), selected1=selected1, selected2=selected2,
                            selected3=selected3)
 
 
-# Graph page for part assembly extension
+# Graph page for part assembly, CEEO Rotate extension. Almost the exact same as home, but takes in input values and
+# sends them to the graph function to make and return a graph
 @app.route('/graph')
 def graph():
     global EID, WID, DID, app_key, secret_key, STEP, partsDictionary, selected1, selected2, selected3
@@ -94,15 +104,17 @@ def graph():
     wid = request.args.get('workspaceId')
     eid = request.args.get('elementId')
 
+    # Only redefine global document ID's if the request ID's returns a new ID
     if did or wid or eid:
         DID = did
         WID = wid
         EID = eid
 
-    STEP = float(request.args.get('step'))
-    selected1 = request.args.get('rotate_part')
-    selected2 = request.args.get('input_track')
-    selected3 = request.args.get('output_track')
+    # Receive inputs from User
+    STEP = float(request.args.get('step'))   # Step value for rotation amount
+    selected1 = request.args.get('rotate_part')   # What part to rotate
+    selected2 = request.args.get('input_track')   # What part to track and graph as input
+    selected3 = request.args.get('output_track')   # What part to track and graph as output
 
     client = Client(configuration={"base_url": base, "access_key": app_key, "secret_key": secret_key})
 
@@ -495,17 +507,7 @@ def multiply(x, y):
     return result
 
 
-# identity_twelve() returns a flattened identity view matrix (1x12)
-def identity_twelve():
-    m = [
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0
-        ]
-    return m
-
-
-# identity_twelve() returns a flattened identity view matrix (1x12)
+# identity_fourxthree() returns an identity view matrix (4x3)
 def identity_fourxthree():
     m = [[1, 0, 0, 0],
          [0, 1, 0, 0],
@@ -521,36 +523,6 @@ def move_matrix(matrix_base, x1, y1, z1):
     matrix[0][3] = x1
     matrix[1][3] = y1
     matrix[2][3] = z1
-    return matrix
-
-
-# move_flat(base,x1,y1,z1) takes a 1x12 view matrix and moves the x,y,z coordinates
-def move_flat(matrix_base, x1, y1, z1):
-    matrix = matrix_base
-    matrix[3] = x1
-    matrix[7] = y1
-    matrix[11] = z1
-    return matrix
-
-
-# twelve_threexfour(matrix) takes a flattened 1x12 view matrix and makes a 4x3 matrix for linear algebra
-def twelve_fourxthree(matrix):
-    threexfour = [[matrix[0], matrix[1], matrix[2], matrix[3]],
-                  [matrix[4], matrix[5], matrix[6], matrix[7]],
-                  [matrix[8], matrix[9], matrix[10], matrix[11]]]
-    return threexfour
-
-
-# threexfour_twelve(matrix) takes a 4x3 view matrix and flattens it to 1x12, the form used by Onshape
-def fourxthree_twelve(matrix):
-    twelve = [matrix[0][0], matrix[0][1], matrix[0][2], matrix[0][3],
-              matrix[1][0], matrix[1][1], matrix[1][2], matrix[1][3],
-              matrix[2][0], matrix[2][1], matrix[2][2], matrix[2][3]]
-    return twelve
-
-
-def fourxfour_fourxthree(matrix):
-    matrix.pop(3)
     return matrix
 
 
@@ -724,31 +696,3 @@ def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.0
     else:
         im1.save('static/images/'+name+'.gif', save_all=True, append_images=images, disposal=2, duration=duration)
     return 'static/images/'+name+'.gif'
-
-
-# def linear_interpolation(client, url: str):
-#     start = 'view 1'
-#     end = 'view 4'
-#
-#     view_matrices = assemblies_named_views(client, url)
-#     view1 = view_matrices['namedViews'][start]['viewMatrix']
-#     view2 = view_matrices['namedViews'][end]['viewMatrix']
-#
-#     # Build new array from old array
-#     new1 = [view1[0:4], view1[4:8], view1[8:12]]
-#     new2 = [view2[0:4], view2[4:8], view2[8:12]]
-#
-#     array = np.linspace(new1, new2, 25)
-#
-#     images = []
-#     matrix = array[0]
-#     flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
-#     assemblies_shaded_view(client, url, flattened, 0.001, "hide", "image.jpg")
-#     im1 = gen_frame("image.jpg")
-#     for matrix in array[1:]:
-#         flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
-#         assemblies_shaded_view(client, url, flattened, 0.001, "hide", "image.jpg")
-#         images.append(gen_frame("image.jpg"))
-#
-#     im1.save('static/images/OnshapeGIF2.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
-#     return 'static/images/OnshapeGIF2.gif'
