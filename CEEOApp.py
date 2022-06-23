@@ -196,6 +196,7 @@ def login3():
     zoom3 = False
     no_rotate = False
     direction = 4   # 1=X, 2=Y, 3=XY, 4=Z, 5=XZ, 6=YZ, 7=XYZ
+    name = "OnshapeGIF"
 
     if did or wid or eid:
         DID = did
@@ -208,7 +209,7 @@ def login3():
     return render_template('home3.html', DID=DID, WID=WID, EID=EID, condition1=False,
                            return1=list_parts_assembly(client, url).split('\n'), FRAMES=frames, ROTATION=rotation,
                            ZSTART=int(zoom_start), ZEND=int(zoom_end), ZAUTO=z_auto, return2=list(views.keys()),
-                           return2_len=len(views.keys()), selected1=start_view, LOOP=loop, ZOOM3=zoom3,
+                           return2_len=len(views.keys()), selected1=start_view, LOOP=loop, ZOOM3=zoom3, NAME=name,
                            ZMID=int(zoom_mid), DIRECTION=int(direction), ROTATE=no_rotate)
 
 
@@ -232,6 +233,7 @@ def gif():
     direction = 0 + bool(request.args.get('rotateX'))
     direction = direction + 2 * bool(request.args.get('rotateY'))
     direction = direction + 4 * bool(request.args.get('rotateZ'))
+    name = request.args.get('name')
 
     if did or wid or eid:
         DID = did
@@ -244,10 +246,10 @@ def gif():
     views = get_views(client, url)
     return render_template('home3.html', condition1=True, DID=DID, WID=WID, EID=EID, FRAMES=frames, ROTATION=rotation,
                            image1=stepping_rotation(client, url, frames, rotation, zoom_start, zoom_end, start_view,
-                                                    z_auto, loop, zoom3, zoom_mid, direction),
+                                                    z_auto, loop, zoom3, zoom_mid, direction, name),
                            return1=list_parts_assembly(client, url).split('\n'), ZSTART=int((.1001-zoom_start)*10000),
                            ZEND=int((.1001-zoom_end)*10000), return2=list(views.keys()), return2_len=len(views.keys()),
-                           selected1=start_view, ZAUTO=z_auto, LOOP=loop, ZOOM3=zoom3,
+                           selected1=start_view, ZAUTO=z_auto, LOOP=loop, ZOOM3=zoom3, NAME=name,
                            ZMID=int((.1001-zoom_mid)*10000), DIRECTION=int(direction))
 
 
@@ -649,10 +651,10 @@ def get_views(client, url: str):
 # ------View Matrix Functions----------#
 # -------------------------------------#
 def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.001, zoom_end=0.0005,
-                      start_view="Isometric", z_auto=False, loop=True, zoom3=False, zoom_mid=0.002, direction=2):
+                      start_view="Isometric", z_auto=False, loop=True, zoom3=False, zoom_mid=0.002, direction=2,
+                      name="OnshapeGIF"):
     global viewsDictionary
 
-    print(direction)
     if direction >= 7:
         rotation = rotation / np.sqrt(3)
     elif direction >= 3 and direction != 4:
@@ -704,10 +706,10 @@ def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.0
         print(str(int(i/frames * 1000)/10) + "%", end="\r")
     print("")
     if loop:
-        im1.save('static/images/OnshapeGIF1.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
+        im1.save('static/images/'+name+'.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
     else:
-        im1.save('static/images/OnshapeGIF1.gif', save_all=True, append_images=images, disposal=2, duration=0)
-    return 'static/images/OnshapeGIF1.gif'
+        im1.save('static/images/'+name+'.gif', save_all=True, append_images=images, disposal=2, duration=0)
+    return 'static/images/'+name+'.gif'
 
 
 # def linear_interpolation(client, url: str):

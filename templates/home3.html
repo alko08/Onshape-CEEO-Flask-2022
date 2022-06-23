@@ -91,6 +91,9 @@
         <label for="loop" class="switch">Loop GIF:</label>
         <input type="checkbox" id="loop" name="loop"  class="checkbox" {% if LOOP %} checked {% endif %}><br><br>
 
+        <label for="name">Filename:</label>
+        <input type="text" id="name" name="name" value={{NAME}}><br><br>
+
         <div id="submit"><input type="submit" value="Submit" class="hover button" onclick="showLoader()"></div>
         <div class="loader-container" id="loader"><div class="loader"></div></div>
 
