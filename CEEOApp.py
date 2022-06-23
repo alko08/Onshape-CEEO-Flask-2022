@@ -69,7 +69,7 @@ def login():
     global EID, WID, DID, STEP, partsDictionary, selected1, selected2, selected3
 
     # Defines default values
-    STEP = 60
+    STEP = 6
     selected1 = "Input <1>"
     selected2 = "Position Tracker <1>"
     selected3 = "Position Tracker <2>"
@@ -111,7 +111,7 @@ def graph():
         EID = eid
 
     # Receive inputs from User
-    STEP = float(request.args.get('step'))   # Step value for rotation amount
+    STEP = int(request.args.get('step'))   # Step value for rotation amount
     selected1 = request.args.get('rotate_part')   # What part to rotate
     selected2 = request.args.get('input_track')   # What part to track and graph as input
     selected3 = request.args.get('output_track')   # What part to track and graph as output
@@ -130,7 +130,7 @@ def graph():
     out_id = partsDictionary[selected3]
 
     # Creating rotation step
-    rotation_step = STEP * np.pi / 180  # in radian
+    rotation_step = 2 * np.pi / STEP  # in radian
     url = '{}/documents/{}/w/{}/e/{}'.format(str(base), str(DID), str(WID), str(EID))
 
     assembly_info = get_assembly_definition(client, url)
@@ -141,7 +141,7 @@ def graph():
         input_y_pos.append(in_pos[1])
         output_x_pos.append(out_pos[0])
         output_y_pos.append(out_pos[1])
-        for i in range(int(360 / STEP)):
+        for i in range(STEP):
             # Rotate the input by rotation_step
             rotate_input(client, assembly_info, url, move_id, rotation_step)
             # Get the x-y position of the input and output position trackers

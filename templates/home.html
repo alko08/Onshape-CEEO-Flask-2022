@@ -22,8 +22,8 @@
 
     <form action="/graph">
         <h3 style="text-align:left; color:#000000;"> Rotate Part and Graph Tracked Positions </h3>
-        <label for="step">Rotation step (in degree):</label>
-        <input type="number" id="step" name="step" value={{STEP}} style="width:60px" step="0.01"><br><br>
+        <label for="step">Number of rotation steps:</label>
+        <input type="number" id="step" name="step" value={{STEP}} style="width:60px" step="1" min="1"><br><br>
 
         <label for="rotate_part">Choose Part To Rotate Around Z Axis:</label>
         <select name="rotate_part" id="rotate_part">
