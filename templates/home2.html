@@ -29,14 +29,14 @@
 
         <label for="view_matrix">Change View Angle:</label>
         <select name="view_matrix" id="view_matrix">
-            <option value="Front">Front</option>
-            <option value="Back">Back</option>
-            <option value="Top">Top</option>
-            <option value="Bottom">Bottom</option>
-            <option value="Left">Left</option>
-            <option value="Right">Right</option>
-            <option value="Isometric">Isometric</option>
-            <option value="Flipped Isometric">Flipped Isometric</option>
+            <option value="Front" {% if condition1=="Front" %} selected="selected" {% endif %}>Front</option>
+            <option value="Back" {% if condition1=="Back" %} selected="selected" {% endif %}>Back</option>
+            <option value="Top" {% if condition1=="Top" %} selected="selected" {% endif %}>Top</option>
+            <option value="Bottom" {% if condition1=="Bottom" %} selected="selected" {% endif %}>Bottom</option>
+            <option value="Left" {% if condition1=="Left" %} selected="selected" {% endif %}>Left</option>
+            <option value="Right" {% if condition1=="Right" %} selected="selected" {% endif %}>Right</option>
+            <option value="Isometric" {% if condition1=="Isometric" %} selected="selected" {% endif %}>Isometric</option>
+            <option value="Flipped_Isometric" {% if condition1=="Flipped-Isometric" %} selected="selected" {% endif %}>Flipped Isometric</option>
         </select>
 
         <div id="submit"><input type="submit" name="refresh" value="Refresh" class="hover button" onclick="showLoader()"></div>

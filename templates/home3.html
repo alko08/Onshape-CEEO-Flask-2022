@@ -162,10 +162,15 @@ function showLoader() {
   const id2 = document.getElementById("rotation");
   const id3 = document.getElementById("zoom_start");
   const id4 = document.getElementById("zoom_end");
+  const id5 = document.getElementById("zoom_mid");
+  const id6 = document.getElementById("duration");
+  const id7 = document.getElementById("height");
+  const id8 = document.getElementById("width");
 
 
-  if (x.style.display === "none" || !id1.checkValidity() || !id2.checkValidity()
-  || !id3.checkValidity() || !id4.checkValidity()) {
+  if (x.style.display === "none" || !id1.checkValidity() || !id2.checkValidity() || !id3.checkValidity()
+  || !id4.checkValidity() || !id5.checkValidity() || !id6.checkValidity() || !id7.checkValidity()
+  || !id8.checkValidity()) {
     x.style.display = "block";
     y.style.display = "none";
   } else {

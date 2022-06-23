@@ -104,7 +104,7 @@ def graph():
     wid = request.args.get('workspaceId')
     eid = request.args.get('elementId')
 
-    # Only redefine global document ID's if the request ID's returns a new ID
+    # Only redefine global Onshape ID's if the request ID's returns a new ID
     if did or wid or eid:
         DID = did
         WID = wid
@@ -133,10 +133,12 @@ def graph():
     rotation_step = 2 * np.pi / STEP  # in radian
     url = '{}/documents/{}/w/{}/e/{}'.format(str(base), str(DID), str(WID), str(EID))
 
+    # Check for initial positions and assembly info
     assembly_info = get_assembly_definition(client, url)
     in_pos = get_position(assembly_info, in_id)
     out_pos = get_position(assembly_info, out_id)
     if in_pos and out_pos:
+        # Add initial positions to position array
         input_x_pos.append(in_pos[0])
         input_y_pos.append(in_pos[1])
         output_x_pos.append(out_pos[0])
@@ -153,7 +155,7 @@ def graph():
             output_x_pos.append(out_pos[0])
             output_y_pos.append(out_pos[1])
 
-    # Plot the path
+    # Plot the path of the input and output positions data
     fig = Figure()
     ax = fig.add_subplot(1, 1, 1)
     ax.plot(input_x_pos, input_y_pos, label='Input')
@@ -170,60 +172,71 @@ def graph():
                            selected1=selected1, selected2=selected2, selected3=selected3)
 
 
-# Home page for part workshop extension
+# Home page for part studio extension
 @app.route('/home2')
 def login2():
     global EID, WID, DID, app_key, secret_key
 
+    # Request user input (view). If nothing is returned set view to Isometric
     view = request.args.get('view_matrix')
     if not view:
         view = "Isometric"
 
+    # Get Onshape ID's
     did = request.args.get('documentId')
     wid = request.args.get('workspaceId')
     eid = request.args.get('elementId')
 
+    # Only redefine global Onshape ID's if the request ID's returns a new ID
     if did or wid or eid:
         DID = did
         WID = wid
         EID = eid
 
+    # Send output image to user using template 'home2.html'
     client = Client(configuration={"base_url": base, "access_key": app_key, "secret_key": secret_key})
     url = '{}/documents/{}/w/{}/e/{}'.format(base, str(DID), str(WID), str(EID))
     return render_template('home2.html', DID=DID, WID=WID, EID=EID, img_data=part_studio_shaded_view(client, url, view),
                            condition1=view, return1=list_parts_part_studio(client, url).split('\n'))
 
 
+# Home page for CEEO GIF Maker, assembly extension.
 @app.route('/home3')
 def login3():
     global EID, WID, DID
 
+    # Request Onshape IDs
     did = request.args.get('documentId')
     wid = request.args.get('workspaceId')
     eid = request.args.get('elementId')
 
-    frames = 20
-    rotation = 360
-    zoom_start = (.1001-0.001) * 10000
-    zoom_mid = (.1001 - 0.002) * 10000
-    zoom_end = (.1001-0.0005) * 10000
-    start_view = "Isometric"
-    z_auto = False
-    loop = True
-    zoom3 = False
-    zoom2 = False
-    direction = 1   # 1=Z, 2=Y, 3=ZY, 4=X, 5=XZ, 6=YX, 7=XYZ as x & y swapped for this app.
-    name = "OnshapeGIF"
-    duration = 0
-    edges = False
-    height = 600
-    width = 1000
-
+    # Only redefine global Onshape ID's if the request ID's returns a new ID
     if did or wid or eid:
         DID = did
         WID = wid
         EID = eid
 
+    # Set default input values
+    frames = 20   # Frames in GIF
+    rotation = 360   # Degrees GIF rotates
+    # Behind the scenes the values of zooms are like 0.001, but then converted to make it easier to read for the user
+    zoom_start = (.1001-0.001) * 10000
+    zoom_mid = (.1001 - 0.002) * 10000
+    zoom_end = (.1001-0.0005) * 10000
+    start_view = "Isometric"
+    z_auto = False   # Auto Zoom
+    loop = True   # GIF Loops
+    zoom3 = False   # Midpoint zoom
+    zoom2 = False   # End Zoom
+    direction = 1   # 1=Z, 2=Y, 3=ZY, 4=X, 5=XZ, 6=YX, 7=XYZ as x & y swapped for this app.
+    name = "OnshapeGIF"   # Filename
+    duration = 0   # Duration of each fram
+    edges = False   # Show edges
+    height = 600   # Height of GIF, pixels
+    width = 1000   # Width of GIF, pixels
+
+    # Send output to user using template 'home3.html'. Output does not include GIF,
+    # but does include default input values and list of parts through list_parts_assembly()
     client = Client(configuration={"base_url": base, "access_key": app_key, "secret_key": secret_key})
     url = '{}/documents/{}/w/{}/e/{}'.format(base, str(DID), str(WID), str(EID))
     views = get_views(client, url)
@@ -234,15 +247,23 @@ def login3():
                            ZMID=int(zoom_mid), DIRECTION=int(direction), DURATION=duration, ZOOM2=zoom2, WIDTH=width)
 
 
-# Graph page for part assembly extension
+# GIF page for CEEO GIF Maker, assembly extension. Called after user inputs values to return a GIF.
 @app.route('/gif')
 def gif():
     global EID, WID, DID, app_key, secret_key, partsDictionary
 
+    # Request Onshape IDs
     did = request.args.get('documentId')
     wid = request.args.get('workspaceId')
     eid = request.args.get('elementId')
 
+    # Only redefine global Onshape ID's if the request ID's returns a new ID
+    if did or wid or eid:
+        DID = did
+        WID = wid
+        EID = eid
+
+    # ------ Request and format user inputs ------ #
     frames = int(request.args.get('frames'))
     loop = bool(request.args.get('loop'))
     name = request.args.get('name')
@@ -261,7 +282,13 @@ def gif():
     zoom3 = bool(request.args.get('do_zoom_mid'))
     start_view = request.args.get('start_view')
 
-    zoom_start = .1001 - float(request.args.get('zoom_start')) / 10000
+    # Convert zoom values back to expected values of decimals, also determines if zoom start, end, and mid is needed.
+    if z_auto:
+        zoom_start = 0   # Auto zoom when zoom = 0
+        zoom2 = False
+    else:
+        zoom_start = .1001 - float(request.args.get('zoom_start')) / 10000
+
     if not zoom2:
         zoom_end = zoom_start
         zoom_mid = zoom_start
@@ -272,19 +299,18 @@ def gif():
     edges = bool(request.args.get('edges'))
     height = int(request.args.get('height'))
     width = int(request.args.get('width'))
+    # ------ End of user inputs ------ #
 
-    if did or wid or eid:
-        DID = did
-        WID = wid
-        EID = eid
-
+    # Generating Onshape API information
     client = Client(configuration={"base_url": base, "access_key": app_key, "secret_key": secret_key})
     url = '{}/documents/{}/w/{}/e/{}'.format(str(base), str(DID), str(WID), str(EID))
 
+    # Send output to user using template 'home3.html'. Output includes created GIF, and won't send until its done.
+    # Also makes sure to set all variables to what they submitted, includes converting back for zooms
     views = get_views(client, url)
     return render_template('home3.html', condition1=True, DID=DID, WID=WID, EID=EID, FRAMES=frames, ROTATION=rotation,
                            image1=stepping_rotation(client, url, frames, rotation, zoom_start, zoom_end, start_view,
-                                                    z_auto, loop, zoom3, zoom_mid, direction, name, duration, edges,
+                                                    loop, zoom3, zoom_mid, direction, name, duration, edges,
                                                     height, width),
                            return1=list_parts_assembly(client, url).split('\n'), ZSTART=int((.1001-zoom_start)*10000),
                            ZEND=int((.1001-zoom_end)*10000), return2=list(views.keys()), return2_len=len(views.keys()),
@@ -296,12 +322,10 @@ def gif():
 # -------------------------------------------------------------------------------------------#
 # ------------------ Helper Functions -------------------------------------------------------#
 # -------------------------------------------------------------------------------------------#
+# This function rotates the input link of the mechanism with a fixed rotation step in degree; changes are
+# made to the actual model, credit to: Felix Deng @ https://github.com/PTC-Education/Four-Bar-Mechanism
 def rotate_input(client, assembly, url: str, part_id: str, rotation: float):
-    """
-    This function rotates the input link of the mechanism 
-    with a fixed rotation step in degree; changes are 
-    made to the actual model 
-    """
+
     identity_matrix = np.reshape([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], (4, 4))
     occurrences = assembly['rootAssembly']['occurrences']
     occurrence = None
@@ -332,11 +356,8 @@ def rotate_input(client, assembly, url: str, part_id: str, rotation: float):
     client.api_client.request(method, url=base + fixed_url, query_params=params, headers=headers, body=payload)
 
 
+# This function gets the definition of the assembly, including information of all part instances and mate features
 def get_assembly_definition(client, url: str):
-    """
-    This function gets the definition of the assembly, 
-    including information of all part instances and mate features 
-    """
     fixed_url = '/api/assemblies/d/did/w/wid/e/eid'
     element = OnshapeElement(url)
     fixed_url = fixed_url.replace('did', element.did)
@@ -354,12 +375,9 @@ def get_assembly_definition(client, url: str):
     return parsed
 
 
+# This function parses through all the parts within the assembly and returns the x and y positions of the position
+# trackers specified with the partId.
 def get_position(assembly, part_id: str):
-    """
-    This function parses through all the parts within the assembly 
-    and returns the x and y positions of the position trackers specified 
-    with the partId. 
-    """
     for occ in assembly['rootAssembly']['occurrences']: 
         if occ['path'][0] == part_id:
             return occ['transform'][3], occ['transform'][7]
@@ -367,6 +385,9 @@ def get_position(assembly, part_id: str):
     return None 
 
 
+# This functions requests the assembly definition
+# Creates a dictionary of all parts by "name" = "ID" to global partsDictionary
+# Returns the parts as output html that can be listed for the user.
 def list_parts_assembly(client, url):
     global partsDictionary
     output_html = ""
@@ -380,6 +401,8 @@ def list_parts_assembly(client, url):
     return output_html
 
 
+# This functions requests the part studio json list of parts through get_parts_in_document() and then converts it into
+# output html that can be listed for the user.
 def list_parts_part_studio(client, url):
     output_html = ""
     part_response = get_parts_in_document(client, url)
@@ -392,10 +415,9 @@ def list_parts_part_studio(client, url):
 
 
 # Get Shaded View of PartStudio, returns the base64 image string of a shaded view of a part studio
+# viewMatrix can be any face direction or isometric as a string, or a 1x12 view matrix, type:"string"
 def part_studio_shaded_view(client, url: str, view_matrix="front"):
-    # viewMatrix can be any face direction or isometric as a string, or a 1x12 view matrix, type:"string"
-    # pixelSize is the size in meters for each pixel. If 0, it will fill the image size output, type:"number"
-
+    # fixed url used for API request
     fixed_url = '/api/partstudios/d/did/w/wid/e/eid/shadedviews'
     element = OnshapeElement(url)
     fixed_url = fixed_url.replace('did', element.did)
@@ -407,18 +429,17 @@ def part_studio_shaded_view(client, url: str, view_matrix="front"):
     matrix = "0.612,0.612,0,0,-0.354,0.354,0.707,0,0.707,-0.707,0.707,0"
     if any(face in view_matrix for face in ["Front", "Back", "Top", "Bottom", "Left", "Right"]):
         matrix = view_matrix
-    elif view_matrix == "Flipped Isometric":
+    elif view_matrix == "Flipped_Isometric":
         matrix = "0.612,0.612,0,0,0.354,-0.354,-0.707,0,-0.707,0.707,-0.707,0"
     elif isinstance(view_matrix, list):
         matrix = str(matrix).replace('[', '').replace(']', '')
 
-    # View Matrix below is roughly isometric
     params = {'viewMatrix': matrix,
               'edges': 'show',
               'outputHeight': 600,
               'outputWidth': 1000,
-              'pixelSize': 0.001}
-    # print(params)
+              'pixelSize': 0}
+
     payload = {}
     headers = {'Accept': 'application/vnd.onshape.v1+json',
                'Content-Type': 'application/json'}
@@ -651,7 +672,7 @@ def get_views(client, url: str):
 # ------View Matrix Functions----------#
 # -------------------------------------#
 def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.001, zoom_end=0.0005,
-                      start_view="Isometric", z_auto=False, loop=True, zoom3=False, zoom_mid=0.002, direction=2,
+                      start_view="Isometric", loop=True, zoom3=False, zoom_mid=0.002, direction=2,
                       name="OnshapeGIF", duration=0, edges=False, height=600, width=1000):
     global viewsDictionary
 
@@ -686,14 +707,11 @@ def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.0
 
     translation = np.linspace(translation_start, translation_end, frames)
 
-    if not z_auto:
-        if zoom3:
-            zoom_array = np.linspace(zoom_start, zoom_mid, int(frames/2+.5))
-            zoom_array2 = np.linspace(zoom_mid, zoom_end, int(frames/2))
-        else:
-            zoom_array = np.linspace(zoom_start, zoom_end, frames)
+    if zoom3:
+        zoom_array = np.linspace(zoom_start, zoom_mid, int(frames/2+.5))
+        zoom_array2 = np.linspace(zoom_mid, zoom_end, int(frames/2))
     else:
-        zoom_array = np.linspace(0, 0, frames)
+        zoom_array = np.linspace(zoom_start, zoom_end, frames)
 
     matrix = multiply(matrix, clockwise_spin(total_z_rotation_angle / frames, direction))
     matrix = move_matrix(matrix, translation[0][0], translation[0][1], translation[0][2])
