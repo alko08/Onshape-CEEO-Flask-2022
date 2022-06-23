@@ -212,9 +212,12 @@ def login3():
     loop = True
     zoom3 = False
     zoom2 = False
-    direction = 4   # 1=X, 2=Y, 3=XY, 4=Z, 5=XZ, 6=YZ, 7=XYZ
+    direction = 1   # 1=Z, 2=Y, 3=ZY, 4=X, 5=XZ, 6=YX, 7=XYZ as x & y swapped for this app.
     name = "OnshapeGIF"
     duration = 0
+    edges = False
+    height = 600
+    width = 1000
 
     if did or wid or eid:
         DID = did
@@ -224,11 +227,11 @@ def login3():
     client = Client(configuration={"base_url": base, "access_key": app_key, "secret_key": secret_key})
     url = '{}/documents/{}/w/{}/e/{}'.format(base, str(DID), str(WID), str(EID))
     views = get_views(client, url)
-    return render_template('home3.html', DID=DID, WID=WID, EID=EID, condition1=False,
+    return render_template('home3.html', DID=DID, WID=WID, EID=EID, condition1=False, EDGES=edges, HEIGHT=height,
                            return1=list_parts_assembly(client, url).split('\n'), FRAMES=frames, ROTATION=rotation,
                            ZSTART=int(zoom_start), ZEND=int(zoom_end), ZAUTO=z_auto, return2=list(views.keys()),
                            return2_len=len(views.keys()), selected1=start_view, LOOP=loop, ZOOM3=zoom3, NAME=name,
-                           ZMID=int(zoom_mid), DIRECTION=int(direction), DURATION=duration, ZOOM2=zoom2)
+                           ZMID=int(zoom_mid), DIRECTION=int(direction), DURATION=duration, ZOOM2=zoom2, WIDTH=width)
 
 
 # Graph page for part assembly extension
@@ -266,6 +269,10 @@ def gif():
         zoom_end = .1001 - float(request.args.get('zoom_end')) / 10000
         zoom_mid = .1001 - float(request.args.get('zoom_mid')) / 10000
 
+    edges = bool(request.args.get('edges'))
+    height = int(request.args.get('height'))
+    width = int(request.args.get('width'))
+
     if did or wid or eid:
         DID = did
         WID = wid
@@ -277,11 +284,13 @@ def gif():
     views = get_views(client, url)
     return render_template('home3.html', condition1=True, DID=DID, WID=WID, EID=EID, FRAMES=frames, ROTATION=rotation,
                            image1=stepping_rotation(client, url, frames, rotation, zoom_start, zoom_end, start_view,
-                                                    z_auto, loop, zoom3, zoom_mid, direction, name, duration),
+                                                    z_auto, loop, zoom3, zoom_mid, direction, name, duration, edges,
+                                                    height, width),
                            return1=list_parts_assembly(client, url).split('\n'), ZSTART=int((.1001-zoom_start)*10000),
                            ZEND=int((.1001-zoom_end)*10000), return2=list(views.keys()), return2_len=len(views.keys()),
                            selected1=start_view, ZAUTO=z_auto, LOOP=loop, ZOOM3=zoom3, NAME=name, DURATION=duration,
-                           ZMID=int((.1001-zoom_mid)*10000), DIRECTION=int(direction), ZOOM2=zoom2)
+                           ZMID=int((.1001-zoom_mid)*10000), DIRECTION=int(direction), ZOOM2=zoom2, EDGES=edges,
+                           HEIGHT=height, WIDTH=width)
 
 
 # -------------------------------------------------------------------------------------------#
@@ -643,7 +652,7 @@ def get_views(client, url: str):
 # -------------------------------------#
 def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.001, zoom_end=0.0005,
                       start_view="Isometric", z_auto=False, loop=True, zoom3=False, zoom_mid=0.002, direction=2,
-                      name="OnshapeGIF", duration=0):
+                      name="OnshapeGIF", duration=0, edges=False, height=600, width=1000):
     global viewsDictionary
 
     if direction >= 7:
@@ -657,6 +666,12 @@ def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.0
         total_z_rotation_angle = 0
     else:
         total_z_rotation_angle = np.pi / (180 / rotation)
+
+    if edges:
+        edges = "show"
+    else:
+        edges = "hide"
+
     translation_start = [0, 0, 0]
     translation_end = [0, 0, -0.05]
 
@@ -683,7 +698,7 @@ def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.0
     matrix = multiply(matrix, clockwise_spin(total_z_rotation_angle / frames, direction))
     matrix = move_matrix(matrix, translation[0][0], translation[0][1], translation[0][2])
     flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
-    assemblies_shaded_view(client, url, flattened, zoom_array[0], "hide", "image.jpg")
+    assemblies_shaded_view(client, url, flattened, zoom_array[0], edges, "image.jpg", height, width)
     im1 = gen_frame("image.jpg")
     for i in range(1, frames):
         matrix = multiply(matrix, clockwise_spin(total_z_rotation_angle / frames, direction))
@@ -691,10 +706,11 @@ def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.0
         flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
         if zoom3 and i >= len(zoom_array):
             # print(str(i) + " | " + str(len(zoom_array2)))
-            assemblies_shaded_view(client, url, flattened, zoom_array2[i - len(zoom_array)], "hide", "image.jpg")
+            assemblies_shaded_view(client, url, flattened, zoom_array2[i - len(zoom_array)], edges, "image.jpg",
+                                   height, width)
         else:
             # print(str(i) + " | " + str(len(zoom_array)))
-            assemblies_shaded_view(client, url, flattened, zoom_array[i], "hide", "image.jpg")
+            assemblies_shaded_view(client, url, flattened, zoom_array[i], edges, "image.jpg", height, width)
         images.append(gen_frame("image.jpg"))
         print(str(int(i/frames * 1000)/10) + "%", end="\r")
     print("")

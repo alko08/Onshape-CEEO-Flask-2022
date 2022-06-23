@@ -30,24 +30,24 @@
         <h3 style="text-align:left; color:#000000;"> GIF Maker </h3>
 
         <label for="frames">Frames:</label>
-        <input type="number" id="frames" name="frames" value={{FRAMES}} style="width:50px"><br>
+        <input type="number" id="frames" name="frames" value={{FRAMES}} style="width:50px" min="1"><br>
 
         <p>------------------------------------------</p>
 
         <span>Rotation Direction:</span>
         <input type="checkbox" id="rotateX" name="rotateX" onclick="showRotate()"
-               {% if DIRECTION == 1 or DIRECTION == 3 or DIRECTION == 5 or DIRECTION == 7 %} checked {% endif %}>
+               {% if DIRECTION == 4 or DIRECTION == 5 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
         <label for="rotateX">X</label>
         <input type="checkbox" id="rotateY" name="rotateY" onclick="showRotate()"
                {% if DIRECTION == 2 or DIRECTION == 3 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
         <label for="rotateY">Y</label>
         <input type="checkbox" id="rotateZ" name="rotateZ" onclick="showRotate()"
-               {% if DIRECTION == 4 or DIRECTION == 5 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
+               {% if DIRECTION == 1 or DIRECTION == 3 or DIRECTION == 5 or DIRECTION == 7 %} checked {% endif %}>
         <label for="rotateZ">Z</label><br>
 
         <div id="rotations" {% if ROTATE %} style="display:none;" {% endif %}>
-            <br><label for="rotation">Total Rotation (in degrees):</label>
-            <input type="number" id="rotation" name="rotation" value={{ROTATION}} style="width:60px" step="0.01"><br>
+            <br><label for="rotation">Total Rotation (clockwise):</label>
+            <input type="number" id="rotation" name="rotation" value={{ROTATION}} style="width:60px" step="0.01"> degrees<br>
         </div>
 
         <p>------------------------------------------</p>
@@ -61,7 +61,7 @@
             <span class="circle_small">●</span>
             <input type="range" min="1" max="1000" id="zoom_start_slider" name="zoom_start" value={{ZSTART}} class="slider">
             <span class="circle_big">●</span><br>
-            <input type="number" id="zoom_start" value={{ZSTART}} style="width:60px" class="slider_text"><br><br>
+            <input type="number" id="zoom_start" value={{ZSTART}} style="width:60px" class="slider_text" min="1" max="1000"><br><br>
 
             <div id="mid_zoom2" {% if not ZOOM2 %} style="display:none;" {% endif %}>
                 <label for="do_zoom_mid" class="switch">Middle Zoom:</label>
@@ -71,7 +71,7 @@
                     <span class="circle_small">●</span>
                     <input type="range" min="1" max="1000" id="zoom_mid_slider" name="zoom_mid" value={{ZMID}} class="slider">
                     <span class="circle_big">●</span><br>
-                    <input type="number" id="zoom_mid" value={{ZMID}} style="width:60px" class="slider_text"><br>
+                    <input type="number" id="zoom_mid" value={{ZMID}} style="width:60px" class="slider_text" min="1" max="1000"><br>
                 </div><br>
             </div>
 
@@ -82,7 +82,7 @@
                 <span class="circle_small">●</span>
                 <input type="range" min="1" max="1000" id="zoom_end_slider" name="zoom_end" value={{ZEND}} class="slider">
                 <span class="circle_big">●</span><br>
-                <input type="number" id="zoom_end" value={{ZEND}} style="width:60px" class="slider_text"><br>
+                <input type="number" id="zoom_end" value={{ZEND}} style="width:60px" class="slider_text" min="1" max="1000"><br>
             </div>
         </div>
 
@@ -95,15 +95,26 @@
             {% endfor %}
         </select><br><br>
 
+        <label for="edges" class="switch">Show Edges:</label>
+        <input type="checkbox" id="edges" name="edges"  class="checkbox" {% if EDGES %} checked {% endif %}><br><br>
+
         <label for="loop" class="switch">Loop GIF:</label>
         <input type="checkbox" id="loop" name="loop"  class="checkbox" {% if LOOP %} checked {% endif %}><br><br>
+
+        <label for="duration">Duration of each frame:</label>
+        <input type="number" id="duration" name="duration" value={{DURATION}} style="width:50px" min="0"> milliseconds<br>
+        <span>(0 for no delay)</span><br>
+
+        <p>------------------------------------------</p>
 
         <label for="name">Filename:</label>
         <input type="text" id="name" name="name" value={{NAME}}><br><br>
 
-        <label for="duration">Duration of each frame:</label>
-        <input type="number" id="duration" name="duration" value={{DURATION}} style="width:50px"> milliseconds<br>
-        <span>(0 for no delay)</span><br><br>
+        <label for="height">Height:</label>
+        <input type="number" id="height" name="height" value={{HEIGHT}} style="width:50px" min="1" max="9459"> pixels<br><br>
+
+        <label for="width">Width:</label>
+        <input type="number" id="width" name="width" value={{WIDTH}} style="width:50px" min="1" max="9459"> pixels<br><br>
 
         <div id="submit"><input type="submit" value="Create" class="hover button" onclick="showLoader()"></div>
         <div class="loader-container" id="loader"><div class="loader"></div></div>
