@@ -186,7 +186,7 @@ def login3():
     eid = request.args.get('elementId')
 
     frames = 20
-    rotation = 0
+    rotation = 360
     zoom_start = (.1001-0.001) * 10000
     zoom_mid = (.1001 - 0.002) * 10000
     zoom_end = (.1001-0.0005) * 10000
@@ -194,7 +194,7 @@ def login3():
     z_auto = True
     loop = True
     zoom3 = False
-    no_rotate = True
+    no_rotate = False
     direction = 4   # 1=X, 2=Y, 3=XY, 4=Z, 5=XZ, 6=YZ, 7=XYZ
 
     if did or wid or eid:
@@ -232,7 +232,6 @@ def gif():
     direction = 0 + bool(request.args.get('rotateX'))
     direction = direction + 2 * bool(request.args.get('rotateY'))
     direction = direction + 4 * bool(request.args.get('rotateZ'))
-    print(direction)
 
     if did or wid or eid:
         DID = did
@@ -548,8 +547,10 @@ def clockwise_spin(theta, direction):
     m = identity_fourxthree()
     if direction >= 4:
         m = clockwise_spinx(theta)
+        direction -= 4
     if direction >= 2:
         m = multiply(m, clockwise_spiny(theta))
+        direction -= 2
     if direction >= 1:
         m = multiply(m, clockwise_spinz(theta))
     return m
@@ -650,6 +651,12 @@ def get_views(client, url: str):
 def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.001, zoom_end=0.0005,
                       start_view="Isometric", z_auto=False, loop=True, zoom3=False, zoom_mid=0.002, direction=2):
     global viewsDictionary
+
+    print(direction)
+    if direction >= 7:
+        rotation = rotation / np.sqrt(3)
+    elif direction >= 3 and direction != 4:
+        rotation = rotation / np.sqrt(2)
 
     if rotation == 0:
         total_z_rotation_angle = 0

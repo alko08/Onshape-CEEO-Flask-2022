@@ -35,10 +35,10 @@
         <div id="rotations" {% if ROTATE %} style="display:none;" {% endif %}>
             <br><span>Rotation Direction:</span>
             <input type="checkbox" id="rotateX" name="rotateX"
-                   {% if DIRECTION == 1 or DIRECTION == 3 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
+                   {% if DIRECTION == 1 or DIRECTION == 3 or DIRECTION == 5 or DIRECTION == 7 %} checked {% endif %}>
             <label for="rotateX">X</label>
             <input type="checkbox" id="rotateY" name="rotateY"
-                   {% if DIRECTION == 2 or DIRECTION == 3 or DIRECTION == 5 or DIRECTION == 7 %} checked {% endif %}>
+                   {% if DIRECTION == 2 or DIRECTION == 3 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
             <label for="rotateY">Y</label>
             <input type="checkbox" id="rotateZ" name="rotateZ"
                    {% if DIRECTION == 4 or DIRECTION == 5 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
