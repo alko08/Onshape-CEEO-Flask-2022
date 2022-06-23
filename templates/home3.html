@@ -20,36 +20,38 @@
     </div>
     <hr>
 
+    {% if condition1 %}
+        <h3 style="text-align:left; color:#000000;"> Generated GIF </h3>
+        <img src="{{ image1 }}" alt="GIF of the assembly"/>
+        <hr>
+    {% endif %}
+
     <form action="/gif">
         <h3 style="text-align:left; color:#000000;"> GIF Maker </h3>
 
         <label for="frames">Frames:</label>
         <input type="number" id="frames" name="frames" value={{FRAMES}} style="width:50px"><br>
 
-
         <p>------------------------------------------</p>
-        <label for="rotate" class="switch">No Rotation:</label>
-        <input type="checkbox" id="rotate" name="rotate" onclick="showRotate()" class="checkbox"
-               {% if ROTATE %} checked {% endif %}><br>
+
+        <span>Rotation Direction:</span>
+        <input type="checkbox" id="rotateX" name="rotateX" onclick="showRotate()"
+               {% if DIRECTION == 1 or DIRECTION == 3 or DIRECTION == 5 or DIRECTION == 7 %} checked {% endif %}>
+        <label for="rotateX">X</label>
+        <input type="checkbox" id="rotateY" name="rotateY" onclick="showRotate()"
+               {% if DIRECTION == 2 or DIRECTION == 3 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
+        <label for="rotateY">Y</label>
+        <input type="checkbox" id="rotateZ" name="rotateZ" onclick="showRotate()"
+               {% if DIRECTION == 4 or DIRECTION == 5 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
+        <label for="rotateZ">Z</label><br>
 
         <div id="rotations" {% if ROTATE %} style="display:none;" {% endif %}>
-            <br><span>Rotation Direction:</span>
-            <input type="checkbox" id="rotateX" name="rotateX"
-                   {% if DIRECTION == 1 or DIRECTION == 3 or DIRECTION == 5 or DIRECTION == 7 %} checked {% endif %}>
-            <label for="rotateX">X</label>
-            <input type="checkbox" id="rotateY" name="rotateY"
-                   {% if DIRECTION == 2 or DIRECTION == 3 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
-            <label for="rotateY">Y</label>
-            <input type="checkbox" id="rotateZ" name="rotateZ"
-                   {% if DIRECTION == 4 or DIRECTION == 5 or DIRECTION == 6 or DIRECTION == 7 %} checked {% endif %}>
-            <label for="rotateZ">Z</label><br><br>
-
-            <label for="rotation">Total Rotation (in degrees):</label>
+            <br><label for="rotation">Total Rotation (in degrees):</label>
             <input type="number" id="rotation" name="rotation" value={{ROTATION}} style="width:60px" step="0.01"><br>
         </div>
 
-
         <p>------------------------------------------</p>
+
         <label for="zoom_auto" class="switch">No Zoom (Automatically Zooms):</label>
         <input type="checkbox" id="zoom_auto" name="zoom_auto" onclick="showZooms()" class="checkbox"
                    {% if ZAUTO %} checked {% endif %}><br>
@@ -61,25 +63,30 @@
             <span class="circle_big">●</span><br>
             <input type="number" id="zoom_start" value={{ZSTART}} style="width:60px" class="slider_text"><br><br>
 
-            <label for="do_zoom_mid" class="switch">Middle Zoom Point:</label>
-            <input type="checkbox" id="do_zoom_mid" name="do_zoom_mid" onclick="showZoomMid()" class="checkbox"
-                   {% if ZOOM3 %} checked {% endif %}><br><br>
-            <div id="mid_zoom" {% if not ZOOM3 %} style="display:none;" {% endif %}>
-                <label for="zoom_mid">Middle Zoom:</label><br>
-                <span class="circle_small">●</span>
-                <input type="range" min="1" max="1000" id="zoom_mid_slider" name="zoom_mid" value={{ZMID}} class="slider">
-                <span class="circle_big">●</span><br>
-                <input type="number" id="zoom_mid" value={{ZMID}} style="width:60px" class="slider_text"><br><br>
+            <div id="mid_zoom2" {% if not ZOOM2 %} style="display:none;" {% endif %}>
+                <label for="do_zoom_mid" class="switch">Middle Zoom:</label>
+                <input type="checkbox" id="do_zoom_mid" name="do_zoom_mid" onclick="showZoomMid()" class="checkbox"
+                       {% if ZOOM3 %} checked {% endif %}><br>
+                <div id="mid_zoom" {% if not ZOOM3 %} style="display:none;" {% endif %}>
+                    <span class="circle_small">●</span>
+                    <input type="range" min="1" max="1000" id="zoom_mid_slider" name="zoom_mid" value={{ZMID}} class="slider">
+                    <span class="circle_big">●</span><br>
+                    <input type="number" id="zoom_mid" value={{ZMID}} style="width:60px" class="slider_text"><br>
+                </div><br>
             </div>
 
-            <label for="zoom_end">Ending Zoom:</label><br>
-            <span class="circle_small">●</span>
-            <input type="range" min="1" max="1000" id="zoom_end_slider" name="zoom_end" value={{ZEND}} class="slider">
-            <span class="circle_big">●</span><br>
-            <input type="number" id="zoom_end" value={{ZEND}} style="width:60px" class="slider_text"><br>
+            <label for="do_zoom_end" class="switch">Ending Zoom:</label>
+            <input type="checkbox" id="do_zoom_end" name="do_zoom_end" onclick="showZoomEnd()" class="checkbox"
+                   {% if ZOOM2 %} checked {% endif %}><br>
+            <div id="end_zoom2" {% if not ZOOM2 %} style="display:none;" {% endif %}>
+                <span class="circle_small">●</span>
+                <input type="range" min="1" max="1000" id="zoom_end_slider" name="zoom_end" value={{ZEND}} class="slider">
+                <span class="circle_big">●</span><br>
+                <input type="number" id="zoom_end" value={{ZEND}} style="width:60px" class="slider_text"><br>
+            </div>
         </div>
-        <p>------------------------------------------</p>
 
+        <p>------------------------------------------</p>
 
         <label for="start_view">Choose The Starting View Angle:</label>
         <select name="start_view" id="start_view">
@@ -94,12 +101,12 @@
         <label for="name">Filename:</label>
         <input type="text" id="name" name="name" value={{NAME}}><br><br>
 
-        <div id="submit"><input type="submit" value="Submit" class="hover button" onclick="showLoader()"></div>
-        <div class="loader-container" id="loader"><div class="loader"></div></div>
+        <label for="duration">Duration of each frame:</label>
+        <input type="number" id="duration" name="duration" value={{DURATION}} style="width:50px"> milliseconds<br>
+        <span>(0 for no delay)</span><br><br>
 
-        {% if condition1 %}
-            <img src="{{ image1 }}" alt="GIF of the assembly"/>
-        {% endif %}
+        <div id="submit"><input type="submit" value="Create" class="hover button" onclick="showLoader()"></div>
+        <div class="loader-container" id="loader"><div class="loader"></div></div>
 
     </form>
     <hr>
@@ -216,13 +223,33 @@ function showZoomMid() {
   }
 }
 
+function showZoomEnd() {
+  let x = document.getElementById("mid_zoom2");
+  let y = document.getElementById("end_zoom2");
+
+  if (x.style.display === "none") {
+    x.style.display = "block";
+    y.style.display = "block";
+  } else {
+    x.style.display = "none";
+    y.style.display = "none";
+    input3.value = inputValue3;
+    slider3.value = inputValue3;
+    input2.value = inputValue2;
+    slider2.value = inputValue2;
+  }
+}
+
 var rotate = document.getElementById("rotation");
 var rotateValue = parseInt(rotate.value);
 
 function showRotate() {
   let x = document.getElementById("rotations");
+  let a = document.getElementById("rotateX").checked;
+  let b = document.getElementById("rotateY").checked;
+  let c = document.getElementById("rotateZ").checked;
 
-  if (x.style.display === "none") {
+  if (a || b || c) {
     x.style.display = "block";
   } else {
     x.style.display = "none";

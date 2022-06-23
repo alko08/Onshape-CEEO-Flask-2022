@@ -194,9 +194,10 @@ def login3():
     z_auto = True
     loop = True
     zoom3 = False
-    no_rotate = False
+    zoom2 = False
     direction = 4   # 1=X, 2=Y, 3=XY, 4=Z, 5=XZ, 6=YZ, 7=XYZ
     name = "OnshapeGIF"
+    duration = 0
 
     if did or wid or eid:
         DID = did
@@ -210,7 +211,7 @@ def login3():
                            return1=list_parts_assembly(client, url).split('\n'), FRAMES=frames, ROTATION=rotation,
                            ZSTART=int(zoom_start), ZEND=int(zoom_end), ZAUTO=z_auto, return2=list(views.keys()),
                            return2_len=len(views.keys()), selected1=start_view, LOOP=loop, ZOOM3=zoom3, NAME=name,
-                           ZMID=int(zoom_mid), DIRECTION=int(direction), ROTATE=no_rotate)
+                           ZMID=int(zoom_mid), DIRECTION=int(direction), DURATION=duration, ZOOM2=zoom2)
 
 
 # Graph page for part assembly extension
@@ -221,19 +222,29 @@ def gif():
     did = request.args.get('documentId')
     wid = request.args.get('workspaceId')
     eid = request.args.get('elementId')
+
     frames = int(request.args.get('frames'))
-    rotation = float(request.args.get('rotation'))
-    z_auto = bool(request.args.get('zoom_auto'))
-    zoom_start = .1001 - float(request.args.get('zoom_start')) / 10000
-    zoom_end = .1001 - float(request.args.get('zoom_end')) / 10000
-    zoom_mid = .1001 - float(request.args.get('zoom_mid')) / 10000
-    start_view = request.args.get('start_view')
     loop = bool(request.args.get('loop'))
-    zoom3 = bool(request.args.get('do_zoom_mid'))
+    name = request.args.get('name')
+    duration = int(request.args.get('duration'))
+
+    rotation = float(request.args.get('rotation'))
     direction = 0 + bool(request.args.get('rotateX'))
     direction = direction + 2 * bool(request.args.get('rotateY'))
     direction = direction + 4 * bool(request.args.get('rotateZ'))
-    name = request.args.get('name')
+
+    z_auto = bool(request.args.get('zoom_auto'))
+    zoom2 = bool(request.args.get('do_zoom_end'))
+    zoom3 = bool(request.args.get('do_zoom_mid'))
+    start_view = request.args.get('start_view')
+
+    zoom_start = .1001 - float(request.args.get('zoom_start')) / 10000
+    if not zoom2:
+        zoom_end = zoom_start
+        zoom_mid = zoom_start
+    else:
+        zoom_end = .1001 - float(request.args.get('zoom_end')) / 10000
+        zoom_mid = .1001 - float(request.args.get('zoom_mid')) / 10000
 
     if did or wid or eid:
         DID = did
@@ -246,11 +257,11 @@ def gif():
     views = get_views(client, url)
     return render_template('home3.html', condition1=True, DID=DID, WID=WID, EID=EID, FRAMES=frames, ROTATION=rotation,
                            image1=stepping_rotation(client, url, frames, rotation, zoom_start, zoom_end, start_view,
-                                                    z_auto, loop, zoom3, zoom_mid, direction, name),
+                                                    z_auto, loop, zoom3, zoom_mid, direction, name, duration),
                            return1=list_parts_assembly(client, url).split('\n'), ZSTART=int((.1001-zoom_start)*10000),
                            ZEND=int((.1001-zoom_end)*10000), return2=list(views.keys()), return2_len=len(views.keys()),
-                           selected1=start_view, ZAUTO=z_auto, LOOP=loop, ZOOM3=zoom3, NAME=name,
-                           ZMID=int((.1001-zoom_mid)*10000), DIRECTION=int(direction))
+                           selected1=start_view, ZAUTO=z_auto, LOOP=loop, ZOOM3=zoom3, NAME=name, DURATION=duration,
+                           ZMID=int((.1001-zoom_mid)*10000), DIRECTION=int(direction), ZOOM2=zoom2)
 
 
 # -------------------------------------------------------------------------------------------#
@@ -558,8 +569,8 @@ def clockwise_spin(theta, direction):
     return m
 
 
-# clockwise_spinx(theta) returns a 4x3 matrix with a rotation of theta around the x axis.
-def clockwise_spinx(theta):
+# clockwise_spinx(theta) returns a 4x3 matrix with a rotation of theta around the x=z axis.
+def clockwise_spinz(theta):
     m = [[1, 0, 0, 0],
          [0, np.cos(theta), np.sin(theta), 0],
          [0, -np.sin(theta), np.cos(theta), 0],
@@ -578,8 +589,8 @@ def clockwise_spiny(theta):
     return m
 
 
-# clockwise_spinz(theta) returns a 4x3 matrix with a rotation of theta around the z axis.
-def clockwise_spinz(theta):
+# clockwise_spinz(theta) returns a 4x3 matrix with a rotation of theta around the x axis.
+def clockwise_spinx(theta):
     m = [[np.cos(theta), np.sin(theta), 0, 0],
          [-np.sin(theta), np.cos(theta), 0, 0],
          [0, 0, 1, 0],
@@ -652,13 +663,15 @@ def get_views(client, url: str):
 # -------------------------------------#
 def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.001, zoom_end=0.0005,
                       start_view="Isometric", z_auto=False, loop=True, zoom3=False, zoom_mid=0.002, direction=2,
-                      name="OnshapeGIF"):
+                      name="OnshapeGIF", duration=0):
     global viewsDictionary
 
     if direction >= 7:
         rotation = rotation / np.sqrt(3)
     elif direction >= 3 and direction != 4:
         rotation = rotation / np.sqrt(2)
+    elif direction == 0:
+        rotation = 0
 
     if rotation == 0:
         total_z_rotation_angle = 0
@@ -706,9 +719,10 @@ def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.0
         print(str(int(i/frames * 1000)/10) + "%", end="\r")
     print("")
     if loop:
-        im1.save('static/images/'+name+'.gif', save_all=True, loop=0, append_images=images, disposal=2, duration=0)
+        im1.save('static/images/'+name+'.gif', save_all=True, loop=0, append_images=images, disposal=2,
+                 duration=duration)
     else:
-        im1.save('static/images/'+name+'.gif', save_all=True, append_images=images, disposal=2, duration=0)
+        im1.save('static/images/'+name+'.gif', save_all=True, append_images=images, disposal=2, duration=duration)
     return 'static/images/'+name+'.gif'
 
 
