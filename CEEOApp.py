@@ -118,6 +118,8 @@ def graph():
 
     client = Client(configuration={"base_url": base, "access_key": app_key, "secret_key": secret_key})
 
+    # ------ START OF ROTATION CODE ------ #
+    # Define variables
     input_x_pos = []
     input_y_pos = []
     output_x_pos = []
@@ -127,6 +129,7 @@ def graph():
     in_id = partsDictionary[selected2]
     out_id = partsDictionary[selected3]
 
+    # Creating rotation step
     rotation_step = STEP * np.pi / 180  # in radian
     url = '{}/documents/{}/w/{}/e/{}'.format(str(base), str(DID), str(WID), str(EID))
 
@@ -157,6 +160,8 @@ def graph():
     ax.plot(output_x_pos, output_y_pos, label='Output')
     ax.legend()
 
+    # Send output image to user using template 'home.html'
+    # Also makes sure to set all variables to what they submitted
     output = io.BytesIO()
     FigureCanvasAgg(fig).print_png(output)
     return render_template('home.html', image1=base64.b64encode(output.getvalue()).decode("utf-8"), condition1=True,
@@ -203,7 +208,7 @@ def login3():
     zoom_mid = (.1001 - 0.002) * 10000
     zoom_end = (.1001-0.0005) * 10000
     start_view = "Isometric"
-    z_auto = True
+    z_auto = False
     loop = True
     zoom3 = False
     zoom2 = False
@@ -240,10 +245,13 @@ def gif():
     name = request.args.get('name')
     duration = int(request.args.get('duration'))
 
+    # For the rest of the code X is 1, Y is 2, and Z is 4, but for some reason when the GIF Maker runs it swaps the X
+    # and Z axis. Either this is some result of the shaded view API call or something with the code. To fix this and
+    # not break the rotate functions, the X and Z value are swapped here
     rotation = float(request.args.get('rotation'))
-    direction = 0 + bool(request.args.get('rotateX'))
+    direction = 0 + 4 * bool(request.args.get('rotateX'))
     direction = direction + 2 * bool(request.args.get('rotateY'))
-    direction = direction + 4 * bool(request.args.get('rotateZ'))
+    direction = direction + 1 * bool(request.args.get('rotateZ'))
 
     z_auto = bool(request.args.get('zoom_auto'))
     zoom2 = bool(request.args.get('do_zoom_end'))
@@ -541,8 +549,8 @@ def clockwise_spin(theta, direction):
     return m
 
 
-# clockwise_spinx(theta) returns a 4x3 matrix with a rotation of theta around the x=z axis.
-def clockwise_spinz(theta):
+# clockwise_spinx(theta) returns a 4x3 matrix with a rotation of theta around the x axis.
+def clockwise_spinx(theta):
     m = [[1, 0, 0, 0],
          [0, np.cos(theta), np.sin(theta), 0],
          [0, -np.sin(theta), np.cos(theta), 0],
@@ -561,8 +569,8 @@ def clockwise_spiny(theta):
     return m
 
 
-# clockwise_spinz(theta) returns a 4x3 matrix with a rotation of theta around the x axis.
-def clockwise_spinx(theta):
+# clockwise_spinz(theta) returns a 4x3 matrix with a rotation of theta around the z axis.
+def clockwise_spinz(theta):
     m = [[np.cos(theta), np.sin(theta), 0, 0],
          [-np.sin(theta), np.cos(theta), 0, 0],
          [0, 0, 1, 0],

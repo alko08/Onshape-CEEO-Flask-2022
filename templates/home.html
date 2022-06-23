@@ -25,7 +25,7 @@
         <label for="step">Rotation step (in degree):</label>
         <input type="number" id="step" name="step" value={{STEP}} style="width:60px" step="0.01"><br><br>
 
-        <label for="rotate_part">Choose Part To Rotate In XY Plane Around Origin:</label>
+        <label for="rotate_part">Choose Part To Rotate Around Z Axis:</label>
         <select name="rotate_part" id="rotate_part">
             {%for part in range(0, return2_len)%}
             <option value="{{return2[part]}}" {% if selected1==return2[part] %} selected="selected" {% endif %}>{{return2[part]}}</option>
