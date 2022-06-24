@@ -230,7 +230,7 @@ def login3():
     zoom2 = False   # End Zoom
     direction = 1   # 1=Z, 2=Y, 3=ZY, 4=X, 5=XZ, 6=YX, 7=XYZ as x & y swapped for this app.
     name = "OnshapeGIF"   # Filename
-    duration = 0   # Duration of each fram
+    duration = 0   # Duration of each frame
     edges = False   # Show edges
     height = 600   # Height of GIF, pixels
     width = 1000   # Width of GIF, pixels
@@ -426,19 +426,20 @@ def part_studio_shaded_view(client, url: str, view_matrix="front"):
 
     method = 'GET'
 
+    # Basic Isometric Matrix
     matrix = "0.612,0.612,0,0,-0.354,0.354,0.707,0,0.707,-0.707,0.707,0"
     if any(face in view_matrix for face in ["Front", "Back", "Top", "Bottom", "Left", "Right"]):
-        matrix = view_matrix
-    elif view_matrix == "Flipped_Isometric":
+        matrix = view_matrix   # Onshape client will accept one of these six strings as just a word instead of an array
+    elif view_matrix == "Flipped_Isometric":   # Custom Matrix created to be a flipped version of the isometric matrix
         matrix = "0.612,0.612,0,0,0.354,-0.354,-0.707,0,-0.707,0.707,-0.707,0"
-    elif isinstance(view_matrix, list):
-        matrix = str(matrix).replace('[', '').replace(']', '')
+    elif isinstance(view_matrix, list):   # Else if given a list, convert it into a string.
+        matrix = str(view_matrix).replace('[', '').replace(']', '')
 
     params = {'viewMatrix': matrix,
               'edges': 'show',
               'outputHeight': 600,
               'outputWidth': 1000,
-              'pixelSize': 0}
+              'pixelSize': 0}   # Pixel Size = 0, so it automatically zooms
 
     payload = {}
     headers = {'Accept': 'application/vnd.onshape.v1+json',
@@ -447,6 +448,7 @@ def part_studio_shaded_view(client, url: str, view_matrix="front"):
     response = client.api_client.request(method, url=base + fixed_url, query_params=params, headers=headers,
                                          body=payload)
 
+    # Load the image from the Onshape API request, encode and decode it (using base64) to send to user
     parsed = json.loads(response.data)
     img_data = base64.b64decode(parsed['images'][0])
     img_data = base64.b64encode(img_data).decode("utf-8")
@@ -480,8 +482,12 @@ def get_parts_in_document(client, url: str):
 # -----------------------------------------------------#
 # ------------ Assembly Gif Functions -----------------#
 # -----------------------------------------------------#
+# This function returns a shaded view of the provided assembly with the provided settings. These settings are extremely
+# customizable. It allows you to change the view angle, pixels size (zoom), if edges are "show" or "hide", the filename
+# of the saved image, the image height and width in pixels.
 def assemblies_shaded_view(client, url: str, view_matrix="Isometric", pixel_size=0.000, edges="show",
                            filename="image.jpg", output_height=600, output_width=1000):
+    # Fixed URL for Onshape assemblies, shaded view API.
     fixed_url = '/api/assemblies/d/did/w/wid/e/eid/shadedviews'
     element = OnshapeElement(url)
     fixed_url = fixed_url.replace('did', element.did)
@@ -489,19 +495,19 @@ def assemblies_shaded_view(client, url: str, view_matrix="Isometric", pixel_size
     fixed_url = fixed_url.replace('eid', element.eid)
 
     method = 'GET'
-    matrix = "0.612,0.612,0,0,-0.354,0.354,0.707,0,0.707,-0.707,0.707,0"
+    matrix = "0.612,0.612,0,0,-0.354,0.354,0.707,0,0.707,-0.707,0.707,0"   # default Isometric View
     if any(face in view_matrix for face in ["front", "back", "top", "bottom", "left", "right"]):
-        matrix = view_matrix
-    elif isinstance(view_matrix, list):
+        matrix = view_matrix   # Onshape client will accept one of these six strings as just a word instead of an array
+    elif isinstance(view_matrix, list):   # Else if given a list, convert it into a string.
         matrix = str(view_matrix).replace('[', '').replace(']', '')
 
-    # View Matrix below is roughly isometric
+    # Create params based on all given inputs.
     params = {'viewMatrix': matrix,
               'edges': edges,
               'outputHeight': output_height,
               'outputWidth': output_width,
               'pixelSize': pixel_size}
-    # print(params)
+
     payload = {}
     headers = {'Accept': 'application/vnd.onshape.v1+json',
                'Content-Type': 'application/json'}
@@ -509,6 +515,7 @@ def assemblies_shaded_view(client, url: str, view_matrix="Isometric", pixel_size
     response = client.api_client.request(method, url=base + fixed_url, query_params=params, headers=headers,
                                          body=payload)
 
+    # Load image based on response data and encode plus decode it using base64
     parsed = json.loads(response.data)
     img = base64.b64decode(parsed['images'][0])
     with open(filename, 'wb') as f:
@@ -520,6 +527,7 @@ def assemblies_shaded_view(client, url: str, view_matrix="Isometric", pixel_size
 # -------------------------------------#
 # ----View Matrix Helper Functions-----#
 # -------------------------------------#
+# Transforms image from file path into a frame that can be used in the GIF maker
 def gen_frame(path):
     im = Image.open(path)
     alpha = im.getchannel('A')
@@ -555,17 +563,8 @@ def identity_fourxthree():
     return m
 
 
-# move_matrix(base,x1,y1,z1) takes a 1x12 view matrix and moves the x,y,z coordinates
-def move_matrix(matrix_base, x1, y1, z1):
-    matrix = matrix_base
-    matrix[0][3] = x1
-    matrix[1][3] = y1
-    matrix[2][3] = z1
-    return matrix
-
-
 # clockwise_spin(theta) returns a 4x3 matrix with a rotation of theta around the specified direction.
-# 1=X, 2=Y, 3=XY, 4=Z, 5=XZ, 6=YZ, 7=XYZ
+# 1=X, 2=Y, 3=XY, 4=Z, 5=XZ, 6=YZ, 7=XYZ. Does this by starting at biggest value and subtracting each time
 def clockwise_spin(theta, direction):
     m = identity_fourxthree()
     if direction >= 4:
@@ -611,6 +610,7 @@ def clockwise_spinz(theta):
 # Get named views from Assembly
 # assemblies_named_views(client, url: str) returns JSON of all named views in an assembly
 def assemblies_named_views(client, url: str):
+    # Fixed URL for Onshape assemblies, named views API.
     fixed_url = '/api/assemblies/d/did/e/eid/namedViews'
     element = OnshapeElement(url)
     fixed_url = fixed_url.replace('did', element.did)
@@ -618,29 +618,28 @@ def assemblies_named_views(client, url: str):
 
     method = 'GET'
 
-    # View Matrix below is roughly isometric
     params = {}
-    # print(params)
     payload = {}
     headers = {'Accept': 'application/vnd.onshape.v1+json',
                'Content-Type': 'application/json'}
 
+    # make Onshape API call
     response = client.api_client.request(method, url=base + fixed_url, query_params=params, headers=headers,
                                          body=payload)
 
+    # load json response and return it
     parsed = json.loads(response.data)
-
-    # views = assembliesNamedViews(url)
-    # print(json.dumps(views, indent=4, sort_keys=True))
-
     return parsed
 
 
 # get_views(client, url: str) returns list of all named and regular views
+# The regular views are hard coded in. The data was gotten through the use of named views in the exact same positions
 def get_views(client, url: str):
     global viewsDictionary
     view_matrices = assemblies_named_views(client, url)['namedViews']
 
+    # clears the global dictionary (viewsDictionary) and then refills its values
+    # Named views first, then hard coded default views
     viewsDictionary.clear()
     if view_matrices:
         for a in view_matrices:
@@ -669,72 +668,91 @@ def get_views(client, url: str):
 
 
 # -------------------------------------#
-# ------View Matrix Functions----------#
+# ------Gif Creating Function----------#
 # -------------------------------------#
-def stepping_rotation(client, url: str, frames=60, rotation=45.0, zoom_start=0.001, zoom_end=0.0005,
-                      start_view="Isometric", loop=True, zoom3=False, zoom_mid=0.002, direction=2,
+"""
+# This function creates a GIF. Its main purpose is to create a GIF where the camera rotates around the object to give
+# the object the effect that it is spinning. It also has the options to zoom in and out throughout the GIF by setting
+# the zoom start/end, along with an option to set the middle zoom point if zoom3 is set to True. This means this
+# function is multipurpose, set direction to 0 to make it not rotate and only zoom in and out. Set zooms to 0 to have,
+# it automatically zoom. Set frames to 1 to just get a image saved as jpg. Change if edges are shown, what the height
+# and width of the GIF will be, along with the name of the file. Also change how long each frame is shown with duration.
+"""
+
+
+# Integers: frames, direction, duration, height, width
+# Floats: rotation, zoom_start, zoom_end, zoom_mid
+# Strings: start_view must be a  name from viewsDictionary, name
+# Booleans: loop, edges, zoom3
+# Special: "client" must be an Onshape client and "url" the url of an Onshape Assembly
+def stepping_rotation(client, url: str, frames=60, rotation=360.0, zoom_start=0.001, zoom_end=0.001,
+                      start_view="Isometric", loop=True, zoom3=False, zoom_mid=0.002, direction=4,
                       name="OnshapeGIF", duration=0, edges=False, height=600, width=1000):
     global viewsDictionary
 
     if direction >= 7:
+        # If direction is all three directions, due to geometry need to decide rotation by root 3
         rotation = rotation / np.sqrt(3)
     elif direction >= 3 and direction != 4:
+        # If direction is in two directions, due to geometry need to decide rotation by root 2
         rotation = rotation / np.sqrt(2)
     elif direction == 0:
+        # If direction is 0, set rotation to 0
         rotation = 0
 
+    # Simple check to prevent dividing by 0
     if rotation == 0:
         total_z_rotation_angle = 0
     else:
         total_z_rotation_angle = np.pi / (180 / rotation)
 
+    # Convert edges from boolean to string of "show" and "hide" for Onshape API
     if edges:
         edges = "show"
     else:
         edges = "hide"
 
-    translation_start = [0, 0, 0]
-    translation_end = [0, 0, -0.05]
-
+    # Create the view array by finding the corresponding array using the view dictionary.
     view_array = viewsDictionary[start_view]
 
     # Build new array from old array
     new_array = [view_array[0:4], view_array[4:8], view_array[8:12]]
 
+    # Defining variables
     images = []
     matrix = new_array
-    zoom_array2 = []
 
-    translation = np.linspace(translation_start, translation_end, frames)
-
+    # Creates zoom array. Checks if midpoint zoom exists or not.
     if zoom3:
-        zoom_array = np.linspace(zoom_start, zoom_mid, int(frames/2+.5))
-        zoom_array2 = np.linspace(zoom_mid, zoom_end, int(frames/2))
+        zoom_array = np.linspace(zoom_start, zoom_mid, int(frames / 2 + .5))
+        zoom_array2 = np.linspace(zoom_mid, zoom_end, int(frames / 2))
+        zoom_array = np.append(zoom_array, zoom_array2)
     else:
         zoom_array = np.linspace(zoom_start, zoom_end, frames)
 
-    matrix = multiply(matrix, clockwise_spin(total_z_rotation_angle / frames, direction))
-    matrix = move_matrix(matrix, translation[0][0], translation[0][1], translation[0][2])
-    flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
-    assemblies_shaded_view(client, url, flattened, zoom_array[0], edges, "image.jpg", height, width)
-    im1 = gen_frame("image.jpg")
+    # First frame is generated. Slight different then creating frames inside the for loop
+    matrix = multiply(matrix, clockwise_spin(total_z_rotation_angle / frames, direction))   # Spin matrix
+    flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()   # Flatten matrix
+    assemblies_shaded_view(client, url, flattened, zoom_array[0], edges, "image.jpg", height, width)   # Get frame
+    im1 = gen_frame("image.jpg")    # This is the only difference, save first frame as base image
+    print(str(int(1 / frames * 1000) / 10) + "%", end="\r")   # print progress in format "100.0%"
+
+    # For loop to iterate through the rest of the frames.
     for i in range(1, frames):
-        matrix = multiply(matrix, clockwise_spin(total_z_rotation_angle / frames, direction))
-        matrix = move_matrix(matrix, translation[i][0], translation[i][1], translation[i][2])
-        flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()
-        if zoom3 and i >= len(zoom_array):
-            # print(str(i) + " | " + str(len(zoom_array2)))
-            assemblies_shaded_view(client, url, flattened, zoom_array2[i - len(zoom_array)], edges, "image.jpg",
-                                   height, width)
-        else:
-            # print(str(i) + " | " + str(len(zoom_array)))
-            assemblies_shaded_view(client, url, flattened, zoom_array[i], edges, "image.jpg", height, width)
-        images.append(gen_frame("image.jpg"))
-        print(str(int(i/frames * 1000)/10) + "%", end="\r")
-    print("")
-    if loop:
+        matrix = multiply(matrix, clockwise_spin(total_z_rotation_angle / frames, direction))   # Spin matrix
+        flattened = matrix[0][0:4].tolist() + matrix[1][0:4].tolist() + matrix[2][0:4].tolist()   # Flatten matrix
+        assemblies_shaded_view(client, url, flattened, zoom_array[i], edges, "image.jpg", height, width)   # Get frame
+        images.append(gen_frame("image.jpg"))   # Save frame to images list
+        print(str(int((i + 1)/frames * 1000)/10) + "%", end="\r")   # print progress in format "100.0%"
+
+    print("")   # prints an empty line as progress is 100.0%
+    if frames == 1:   # If only one frame, send the user a jpg, not a gif
+        os.rename("image.jpg", 'static/images/' + name + '.jpg')
+        return 'static/images/' + name + '.jpg'
+
+    if loop:   # If loop is set to true, loop gif multiple times, else don't loop
         im1.save('static/images/'+name+'.gif', save_all=True, loop=0, append_images=images, disposal=2,
                  duration=duration)
     else:
         im1.save('static/images/'+name+'.gif', save_all=True, append_images=images, disposal=2, duration=duration)
-    return 'static/images/'+name+'.gif'
+    return 'static/images/'+name+'.gif'   # Return GIF

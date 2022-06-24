@@ -9,7 +9,7 @@
     <header><h1> Tufts CEEO App </h1></header>
     <hr>
 
-
+    <!--This is the parts list section. Stays hidden unless button is pressed. Autofill through flask with "return1"-->
     <button onclick="hidePartsList()" class="hover">Parts List</button>
     <div id="partsList">
         <p>
@@ -21,7 +21,7 @@
     </div>
     <hr>
 
-
+    <!--This is the view creator section. When the submit button is loaded calls "/home2"-->
     <form action="/home2">
         <h3> {{ condition1 }} - View </h3>
         <img src="data:image/jpeg;base64,{{ img_data }}" alt="img_data"  id="imgslot"/>
