@@ -1,14 +1,11 @@
-# OnShapeFlaskServer
-Python-based Flask Server for communicating with OnShape
+# OnshapeFlaskServer
+Python-based Flask Server for communicating with Onshape
 
 Lead developer: Alexander Koppel
 
 ---
-## Description:
 
-This project has been migrated over to https://github.com/ceeoinnovations/OnShapeFlaskServer.
-
-***FILL IN DESCRIPTION***
+***This project has been migrated over to https://github.com/ceeoinnovations/OnshapeFlaskServer.***
 
 ---
 This project created by the Tufts Center for Engineering Education and Outreach (CEEO).
